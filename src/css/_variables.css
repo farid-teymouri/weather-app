@@ -1,0 +1,181 @@
+/**
+ * CSS Variables for WeatherFlow Application
+ * WCAG 2.1 AA compliant color system with dark mode support
+ * Follows semantic color naming conventions
+ */
+
+:root {
+  /* Primary Brand Colors */
+  --color-primary: #4c6fff;
+  --color-primary-dark: #3a5ce5;
+  --color-primary-light: #6d8bff;
+  --color-secondary: #8c52ff;
+  --color-secondary-dark: #7a40e6;
+  --color-secondary-light: #a377ff;
+
+  /* Weather-Specific Colors */
+  --color-sunny: #f6ad55;
+  --color-cloudy: #a0aec0;
+  --color-rainy: #4299e1;
+  --color-stormy: #dd6b20;
+  --color-snowy: #718096;
+
+  /* Background Colors */
+  --color-background: #ffffff;
+  --color-background-secondary: #f8fafc;
+  --color-background-tertiary: #edf2f7;
+  --color-card-background: #ffffff;
+
+  /* Text Colors */
+  --color-text: #1a202c;
+  --color-text-secondary: #4a5568;
+  --color-text-tertiary: #718096;
+  --color-text-muted: #a0aec0;
+  --color-text-inverse: #ffffff;
+
+  /* Border Colors */
+  --color-border: #e2e8f0;
+  --color-border-light: #f1f5f9;
+  --color-border-dark: #cbd5e0;
+
+  /* State Colors */
+  --color-success: #38a169;
+  --color-success-light: #68d391;
+  --color-warning: #dd6b20;
+  --color-warning-light: #f6ad55;
+  --color-error: #e53e3e;
+  --color-error-light: #feb2b2;
+  --color-info: #4299e1;
+  --color-info-light: #63b3ed;
+
+  /* Shadow Colors */
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-shadow-dark: rgba(0, 0, 0, 0.15);
+
+  /* Transition & Animation */
+  --transition-duration: 0.3s;
+  --transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
+  --animation-duration: 0.5s;
+
+  /* Border Radius */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+  --border-radius-2xl: 24px;
+  --border-radius-full: 9999px;
+
+  /* Spacing Scale */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+
+  /* Typography */
+  --font-family-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+    Cantarell, sans-serif;
+  --font-family-mono: "SF Mono", "Fira Code", "Menlo", monospace;
+
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-md: 1rem; /* 16px */
+  --font-size-lg: 1.125rem; /* 18px */
+  --font-size-xl: 1.25rem; /* 20px */
+  --font-size-2xl: 1.5rem; /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+  --font-size-4xl: 2.25rem; /* 36px */
+  --font-size-5xl: 3rem; /* 48px */
+  --font-size-6xl: 4rem; /* 64px */
+
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  /* Z-Index Scale */
+  --z-index-base: 0;
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1020;
+  --z-index-fixed: 1030;
+  --z-index-modal-backdrop: 1040;
+  --z-index-modal: 1050;
+  --z-index-popover: 1060;
+  --z-index-tooltip: 1070;
+
+  /* Breakpoints */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+}
+
+/**
+ * Dark Mode Color Scheme
+ * WCAG 2.1 AA compliant contrast ratios maintained
+ */
+[data-theme="dark"] {
+  /* Background Colors */
+  --color-background: #1a202c;
+  --color-background-secondary: #2d3748;
+  --color-background-tertiary: #4a5568;
+  --color-card-background: #2d3748;
+
+  /* Text Colors */
+  --color-text: #f7fafc;
+  --color-text-secondary: #e2e8f0;
+  --color-text-tertiary: #cbd5e0;
+  --color-text-muted: #a0aec0;
+  --color-text-inverse: #1a202c;
+
+  /* Border Colors */
+  --color-border: #2d3748;
+  --color-border-light: #4a5568;
+  --color-border-dark: #1a202c;
+
+  /* Card Shadows (adjusted for dark mode) */
+  --color-shadow: rgba(0, 0, 0, 0.3);
+  --color-shadow-dark: rgba(0, 0, 0, 0.5);
+}
+
+/**
+ * Print Styles - Force light mode for printing
+ */
+@media print {
+  :root {
+    --color-background: #ffffff;
+    --color-background-secondary: #f8fafc;
+    --color-background-tertiary: #edf2f7;
+    --color-card-background: #ffffff;
+
+    --color-text: #1a202c;
+    --color-text-secondary: #4a5568;
+    --color-text-tertiary: #718096;
+    --color-text-muted: #a0aec0;
+    --color-text-inverse: #ffffff;
+
+    --color-border: #e2e8f0;
+    --color-border-light: #f1f5f9;
+    --color-border-dark: #cbd5e0;
+  }
+}
+
+/**
+ * Accessibility: High Contrast Mode Support
+ */
+@media (prefers-contrast: high) {
+  :root {
+    --color-border: #000000;
+    --color-shadow: rgba(0, 0, 0, 0.3);
+  }
+
+  [data-theme="dark"] {
+    --color-border: #ffffff;
+  }
+}

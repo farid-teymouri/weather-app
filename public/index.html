@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+            name="description"
+            content="Professional weather application built with vanilla JavaScript - PWA ready, WCAG 2.1 AA compliant"
+        />
+        <meta name="theme-color" content="#4c6fff" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#1a202c" media="(prefers-color-scheme: dark)" />
+
+        <!-- Open Graph / Social Media Meta Tags -->
+        <meta property="og:title" content="WeatherFlow - Professional Weather Application" />
+        <meta
+            property="og:description"
+            content="Modern weather app with vanilla JavaScript, PWA capabilities, and full accessibility"
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://weather-app.example.com" />
+        <meta property="og:image" content="./screenshot.svg" />
+
+        <!-- PWA Manifest -->
+        <link rel="manifest" href="./manifest.json" />
+
+        <!-- Icons -->
+        <link rel="icon" type="image/svg+xml" href="./icons/icon-192.svg" />
+        <link rel="apple-touch-icon" href="./icons/icon-192.svg" />
+
+        <!-- Preconnect to external APIs -->
+        <link rel="preconnect" href="https://api.openweathermap.org" />
+
+        <!-- Main CSS - Loaded directly without build step -->
+        <link rel="stylesheet" href="../src/css/main.css" />
+
+        <!-- Critical CSS for immediate rendering -->
+        <style>
+            /* Base styles for immediate rendering */
+            :root {
+                --color-primary: #4c6fff;
+                --color-secondary: #8c52ff;
+                --color-background: #ffffff;
+                --color-text: #1a202c;
+                --color-border: #e2e8f0;
+                --transition-duration: 0.3s;
+            }
+
+            [data-theme='dark'] {
+                --color-background: #1a202c;
+                --color-text: #f7fafc;
+                --color-border: #2d3748;
+            }
+
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                background: var(--color-background);
+                color: var(--color-text);
+                line-height: 1.6;
+                transition:
+                    background-color var(--transition-duration),
+                    color var(--transition-duration);
+                min-height: 100vh;
+            }
+
+            .app-container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 1rem;
+            }
+
+            /* Loading states */
+            .skeleton {
+                background: linear-gradient(
+                    90deg,
+                    var(--color-border) 25%,
+                    var(--color-background) 50%,
+                    var(--color-border) 75%
+                );
+                background-size: 200% 100%;
+                animation: skeleton-loading 1.5s infinite;
+            }
+
+            @keyframes skeleton-loading {
+                0% {
+                    background-position: 200% 0;
+                }
+                100% {
+                    background-position: -200% 0;
+                }
+            }
+
+            /* Reduced motion support */
+            @media (prefers-reduced-motion: reduce) {
+                * {
+                    animation-duration: 0.01ms !important;
+                    animation-iteration-count: 1 !important;
+                    transition-duration: 0.01ms !important;
+                }
+            }
+        </style>
+
+        <title>WeatherFlow - Professional Weather Application</title>
+    </head>
+    <body>
+        <div id="app" class="app-container">
+            <!-- Header Section -->
+            <header class="header" role="banner">
+                <div class="header-content">
+                    <h1 class="app-title">🌤️ WeatherFlow</h1>
+
+                    <div class="header-actions">
+                        <!-- Location Button -->
+                        <button
+                            id="location-btn"
+                            class="btn btn-icon"
+                            aria-label="Get current location"
+                            title="Get current location"
+                        >
+                            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path
+                                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z"
+                                />
+                            </svg>
+                        </button>
+
+                        <!-- Search Input -->
+                        <div class="search-container">
+                            <label for="location-search" class="sr-only">Search for a location</label>
+                            <input
+                                type="text"
+                                id="location-search"
+                                class="search-input"
+                                placeholder="Search location..."
+                                aria-label="Search for a location"
+                                autocomplete="off"
+                            />
+                            <button
+                                id="search-clear"
+                                class="btn btn-icon search-clear-btn"
+                                aria-label="Clear search"
+                                style="display: none"
+                            >
+                                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path
+                                        d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Theme Toggle -->
+                        <button
+                            id="theme-toggle"
+                            class="btn btn-icon"
+                            aria-label="Toggle dark mode"
+                            aria-pressed="false"
+                        >
+                            <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="5" />
+                                <line x1="12" y1="1" x2="12" y2="3" />
+                                <line x1="12" y1="21" x2="12" y2="23" />
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                                <line x1="1" y1="12" x2="3" y2="12" />
+                                <line x1="21" y1="12" x2="23" y2="12" />
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                            </svg>
+                            <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true" style="display: none">
+                                <path
+                                    d="M20 15.31L23.31 12 20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69zM12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"
+                                />
+                            </svg>
+                        </button>
+
+                        <!-- Unit Toggle -->
+                        <button id="unit-toggle" class="btn btn-secondary" aria-label="Toggle temperature units">
+                            <span class="unit-display">°C</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="main-content" role="main">
+                <!-- Current Weather Section -->
+                <section id="current-weather" class="weather-section" aria-labelledby="current-weather-title">
+                    <h2 id="current-weather-title" class="section-title sr-only">Current Weather</h2>
+
+                    <div class="weather-card" aria-live="polite">
+                        <!-- Location Info -->
+                        <div class="location-info">
+                            <h3 class="location-name skeleton" aria-label="Loading location">Loading...</h3>
+                            <p class="location-details skeleton" aria-label="Loading details">
+                                Loading weather details...
+                            </p>
+                        </div>
+
+                        <!-- Temperature Display -->
+                        <div class="temperature-display">
+                            <span class="temperature-value skeleton" aria-label="Loading temperature">--</span>
+                            <span class="temperature-unit">°C</span>
+                        </div>
+
+                        <!-- Weather Icon -->
+                        <div class="weather-icon-container">
+                            <svg class="weather-icon skeleton" viewBox="0 0 100 100" aria-hidden="true">
+                                <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="4" />
+                            </svg>
+                            <p class="weather-condition skeleton" aria-label="Loading condition">Loading...</p>
+                        </div>
+
+                        <!-- Weather Details -->
+                        <div class="weather-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Feels Like:</span>
+                                <span class="detail-value skeleton">--°</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Humidity:</span>
+                                <span class="detail-value skeleton">--%</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Wind:</span>
+                                <span class="detail-value skeleton">-- m/s</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Pressure:</span>
+                                <span class="detail-value skeleton">-- hPa</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Forecast Section -->
+                <section id="forecast" class="weather-section" aria-labelledby="forecast-title">
+                    <h2 id="forecast-title" class="section-title">7-Day Forecast</h2>
+
+                    <div class="forecast-container" role="list">
+                        <!-- Forecast cards will be dynamically inserted here -->
+                        <div class="forecast-skeleton" role="listitem">
+                            <div class="forecast-day skeleton">Loading...</div>
+                            <div class="forecast-icon skeleton"></div>
+                            <div class="forecast-temp skeleton">--° / --°</div>
+                        </div>
+                        <div class="forecast-skeleton" role="listitem">
+                            <div class="forecast-day skeleton">Loading...</div>
+                            <div class="forecast-icon skeleton"></div>
+                            <div class="forecast-temp skeleton">--° / --°</div>
+                        </div>
+                        <div class="forecast-skeleton" role="listitem">
+                            <div class="forecast-day skeleton">Loading...</div>
+                            <div class="forecast-icon skeleton"></div>
+                            <div class="forecast-temp skeleton">--° / --°</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Favorites Section -->
+                <section id="favorites" class="weather-section" aria-labelledby="favorites-title">
+                    <div class="favorites-header">
+                        <h2 id="favorites-title" class="section-title">Favorites</h2>
+                        <button
+                            id="favorites-toggle"
+                            class="btn btn-icon"
+                            aria-label="Toggle favorites panel"
+                            aria-expanded="true"
+                        >
+                            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M7 10l5 5 5-5z" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div id="favorites-list" class="favorites-list" role="list">
+                        <!-- Favorites will be dynamically inserted here -->
+                        <p class="favorites-empty skeleton">Loading favorites...</p>
+                    </div>
+                </section>
+            </main>
+
+            <!-- Toast Notifications -->
+            <div id="toast-container" class="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+            <!-- Loading Overlay -->
+            <div id="loading-overlay" class="loading-overlay" aria-hidden="true">
+                <div class="loading-spinner">
+                    <div class="spinner-ring"></div>
+                    <p class="loading-text">Loading weather data...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Worker Registration -->
+        <!-- <script>
+            // Register service worker for PWA functionality
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker
+                        .register('./service-worker.js')
+                        .then((registration) => {
+                            console.log('ServiceWorker registered:', registration.scope);
+                        })
+                        .catch((error) => {
+                            console.error('ServiceWorker registration failed:', error);
+                        });
+                });
+            }
+        </script> -->
+
+        <!-- Main Application Script - Using type="module" for ES6 imports -->
+        <script type="module" src="../src/js/main.js"></script>
+    </body>
+</html>

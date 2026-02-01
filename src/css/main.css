@@ -1,0 +1,67 @@
+/**
+ * Main CSS Entry Point for WeatherFlow
+ * Imports all component styles in proper cascade order
+ * Uses CSS cascade layers for better organization
+ */
+
+/* Import base styles and variables */
+@import url('./_variables.css');
+@import url('./_base.css');
+
+/* Import layout styles */
+@import url('./_layout.css');
+
+/* Import component styles */
+@import url('./_components.css');
+
+/* Import utility classes */
+@import url('./_utilities.css');
+
+/**
+ * Container Queries for responsive components
+ * Modern approach to component-based responsiveness
+ */
+.weather-card {
+    container-type: inline-size;
+    container-name: weather-card;
+}
+
+@container weather-card (min-width: 400px) {
+    .temperature-display {
+        flex-direction: row;
+        align-items: center;
+        gap: var(--spacing-md);
+    }
+
+    .temperature-value {
+        font-size: var(--font-size-6xl);
+    }
+}
+
+@container weather-card (min-width: 600px) {
+    .weather-details {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/**
+ * Print-specific styles for weather information
+ */
+@media print {
+    .header-actions,
+    .favorites-header button,
+    .toast-container,
+    .loading-overlay {
+        display: none !important;
+    }
+
+    .weather-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    .forecast-container {
+        display: grid !important;
+        grid-template-columns: repeat(7, 1fr) !important;
+    }
+}

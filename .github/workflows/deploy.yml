@@ -1,0 +1,54 @@
+name: Deploy to GitHub Pages
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+
+jobs:
+    build-and-deploy:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v3
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: '18'
+                  cache: 'npm'
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Build application
+              run: npm run build
+              env:
+                  NODE_ENV: production
+
+            - name: Deploy to GitHub Pages
+              uses: peaceiris/actions-gh-pages@v3
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  publish_dir: ./dist
+                  publish_branch: gh-pages
+                  cname: weather-app.example.com # Optional: replace with your custom domain
+                  enable_jekyll: false
+                  allow_empty_commit: false
+                  force_orphan: true
+                  keep_files: false
+                  user_name: 'github-actions[bot]'
+                  user_email: 'github-actions[bot]@users.noreply.github.com'
+                  commit_message: 'Deploy Weather App ${{ github.sha }}'
+
+            - name: Notify deployment status
+              if: success()
+              run: echo "Deployment successful! 🚀"
+
+            - name: Notify deployment failure
+              if: failure()
+              run: echo "Deployment failed! ❌"

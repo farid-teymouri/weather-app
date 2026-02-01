@@ -1,0 +1,64 @@
+{
+    "name": "weather-app",
+    "version": "1.0.0",
+    "description": "Professional weather application built with vanilla JavaScript - PWA ready, fully accessible",
+    "main": "./src/js/main.js",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "format": "prettier --write \"**/*.{js,css,html,json,md}\"",
+        "format:check": "prettier --check \"**/*.{js,css,html,json,md}\"",
+        "lint": "eslint src/js --ext .js",
+        "prepare": "husky install",
+        "test": "echo \"No tests specified\""
+    },
+    "keywords": [
+        "weather",
+        "pwa",
+        "vanilla-javascript",
+        "accessibility",
+        "dark-mode"
+    ],
+    "author": "Farid Teymouri <senior.farid72@gmail.com>",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/farid-teymouri/weather-app.git"
+    },
+    "bugs": {
+        "url": "https://github.com/farid-teymouri/weather-app/issues"
+    },
+    "homepage": "https://github.com/farid-teymouri/weather-app#readme",
+    "devDependencies": {
+        "vite": "^5.0.0",
+        "prettier": "^3.0.0",
+        "eslint": "^8.50.0",
+        "eslint-config-prettier": "^9.0.0",
+        "eslint-plugin-jsdoc": "^46.0.0",
+        "husky": "^8.0.0",
+        "lint-staged": "^15.0.0"
+    },
+    "lint-staged": {
+        "**/*.{js,css,html,json,md}": [
+            "prettier --write"
+        ],
+        "src/js/**/*.js": [
+            "eslint --fix"
+        ]
+    },
+    "engines": {
+        "node": ">=18.0.0",
+        "npm": ">=9.0.0"
+    },
+    "browserslist": [
+        "last 2 versions",
+        "> 1%",
+        "not dead"
+    ],
+    "volta": {
+        "node": "18.17.0",
+        "npm": "9.6.7"
+    }
+}
