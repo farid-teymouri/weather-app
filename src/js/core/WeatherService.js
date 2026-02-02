@@ -184,34 +184,31 @@ export class WeatherService {
     }
 
     /**
-     * Generate location-specific mock weather data
-     * Uses coordinates to determine realistic weather patterns
-     * Tehran is set as the primary default with authentic winter details
+     * Generate location-specific mock weather data with diverse conditions
+     * Uses coordinates to create deterministic but varied weather patterns
      * @private
      * @param {number} lat - Latitude
      * @param {number} lon - Longitude
      * @param {string} units - Temperature units ('metric' or 'imperial')
-     * @returns {Object} Mock weather data with complete fields for all locations
+     * @returns {Object} Complete weather data object with varied conditions
      */
     _getMockWeatherData(lat, lon, units) {
-        // Generate deterministic seed from coordinates for consistent results
-        const seed = Math.abs(Math.sin(lat * lon + lat + lon) * 10000);
+        // Generate deterministic seed from coordinates (0-99)
+        const seed = Math.abs(Math.floor((Math.sin(lat * lon + lat + lon) * 10000) % 100));
 
-        // REALISTIC TEHRAN WINTER WEATHER (December-February)
+        // SPECIAL HANDLING FOR TEHRAN (Default Location)
         const isTehran = Math.abs(lat - 35.6892) < 0.1 && Math.abs(lon - 51.389) < 0.1;
 
         if (isTehran) {
-            // Authentic Tehran winter weather details (typical January day)
+            // Authentic Tehran winter weather (February)
             const tempC = 9;
-            const temp = units === 'metric' ? tempC : Math.round((tempC * 9) / 5 + 32);
-
-            return this._createWeatherData({
+            return this._buildWeatherData({
                 name: 'Tehran',
                 country: 'IR',
                 lat: 35.6892,
                 lon: 51.389,
                 timezone: 12600,
-                temp: temp,
+                temp: units === 'metric' ? tempC : Math.round((tempC * 9) / 5 + 32),
                 feelsLike: units === 'metric' ? 6 : 43,
                 tempMin: units === 'metric' ? 7 : 45,
                 tempMax: units === 'metric' ? 11 : 52,
@@ -226,48 +223,67 @@ export class WeatherService {
             });
         }
 
-        // SEASONAL WEATHER GENERATION FOR ALL OTHER LOCATIONS
-        const month = new Date().getMonth();
+        // SEASONAL ADJUSTMENT (February = Winter in Northern Hemisphere)
+        const month = 1; // February (0-indexed)
         const isNorthernHemisphere = lat > 0;
         const isWinter = isNorthernHemisphere ? month >= 11 || month <= 2 : month >= 5 && month <= 8;
 
-        // Calculate base temperature with seasonal adjustment
+        // Calculate realistic temperature based on latitude and season
         let baseTempC = 30 - Math.abs(lat) * 0.4;
         if (isWinter) baseTempC -= 8;
-        else if (
-            (isNorthernHemisphere && month >= 5 && month <= 8) ||
-            (!isNorthernHemisphere && (month <= 1 || month >= 11))
-        ) {
-            baseTempC += 3;
-        }
-
-        // Add location-specific variation
         const tempVariation = (seed % 7) - 3;
         let tempC = baseTempC + tempVariation;
         tempC = Math.max(-15, Math.min(45, tempC));
         const temp = units === 'metric' ? Math.round(tempC) : Math.round((tempC * 9) / 5 + 32);
 
-        // Determine weather condition based on season and location
-        let condition, description, clouds;
-        if (isWinter) {
-            condition = seed % 3 === 0 ? 'Snow' : 'Clouds';
-            description = condition === 'Snow' ? 'light snow' : 'scattered clouds';
-            clouds = condition === 'Snow' ? 85 : 60;
-        } else {
-            condition = seed % 4 === 0 ? 'Rain' : seed % 4 === 1 ? 'Clouds' : 'Clear';
-            description = condition === 'Rain' ? 'light rain' : condition === 'Clouds' ? 'few clouds' : 'clear sky';
-            clouds = condition === 'Rain' ? 75 : condition === 'Clouds' ? 40 : 10;
-        }
+        // ✅ CRITICAL FIX: DIVERSE CONDITION GENERATION (0-99 seed range)
+        let condition, description, clouds, humidity;
 
-        // Generate realistic humidity based on condition
-        const humidity = condition === 'Rain' ? 80 : condition === 'Clouds' ? 65 : condition === 'Snow' ? 75 : 45;
+        // Use seed to determine condition with good distribution
+        if (isWinter) {
+            // Winter conditions: 30% Snow, 40% Clouds, 30% Clear
+            if (seed < 30) {
+                condition = 'Snow';
+                description = 'light snow';
+                clouds = 85;
+                humidity = 85;
+            } else if (seed < 70) {
+                condition = 'Clouds';
+                description = 'scattered clouds';
+                clouds = 60;
+                humidity = 70;
+            } else {
+                condition = 'Clear';
+                description = 'clear sky';
+                clouds = 15;
+                humidity = 50;
+            }
+        } else {
+            // Summer conditions: 20% Rain, 30% Clouds, 50% Clear
+            if (seed < 20) {
+                condition = 'Rain';
+                description = 'light rain';
+                clouds = 75;
+                humidity = 80;
+            } else if (seed < 50) {
+                condition = 'Clouds';
+                description = 'few clouds';
+                clouds = 40;
+                humidity = 65;
+            } else {
+                condition = 'Clear';
+                description = 'clear sky';
+                clouds = 10;
+                humidity = 45;
+            }
+        }
 
         // Wind direction based on hemisphere
         const windDeg = isNorthernHemisphere
-            ? 270 + (Math.round(seed * 90) % 90) // Westerlies
-            : 90 + (Math.round(seed * 90) % 90); // Easterlies
+            ? 270 + (seed % 90) // Westerlies dominant
+            : 90 + (seed % 90); // Easterlies dominant
 
-        return this._createWeatherData({
+        return this._buildWeatherData({
             name: 'Unknown Location',
             country: 'XX',
             lat: lat,
@@ -286,6 +302,46 @@ export class WeatherService {
             clouds: clouds,
             units: units,
         });
+    }
+    /**
+     * Helper to build standardized weather data object
+     * Ensures all required fields exist for renderer
+     * @private
+     * @param {Object} params - Weather parameters
+     * @returns {Object} Complete weather data object
+     */
+    _buildWeatherData(params) {
+        return {
+            name: params.name,
+            sys: {
+                country: params.country,
+                sunrise: Math.floor(Date.now() / 1000) + params.timezone + 21600,
+                sunset: Math.floor(Date.now() / 1000) + params.timezone + 64800,
+            },
+            main: {
+                temp: params.temp,
+                feels_like: params.feelsLike,
+                temp_min: params.tempMin,
+                temp_max: params.tempMax,
+                pressure: params.pressure,
+                humidity: params.humidity,
+            },
+            weather: [
+                {
+                    main: params.condition,
+                    description: params.description,
+                    icon: this._getWeatherIconCode(params.condition),
+                },
+            ],
+            wind: {
+                speed: params.windSpeed,
+                deg: params.windDeg,
+            },
+            clouds: { all: params.clouds },
+            dt: Math.floor(Date.now() / 1000),
+            timezone: params.timezone,
+            coord: { lat: params.lat, lon: params.lon },
+        };
     }
     /**
      * Helper method to create standardized weather data object
@@ -331,7 +387,7 @@ export class WeatherService {
     /**
      * Get OpenWeatherMap icon code for condition
      * @private
-     * @param {string} condition - Weather condition
+     * @param {string} condition - Weather condition name
      * @returns {string} Icon code
      */
     _getWeatherIconCode(condition) {

@@ -57,7 +57,11 @@
     margin: auto;
     display: inline;
 }
-
+.weather-icon-container svg {
+    transition: opacity 0.3s ease;
+    display: block;
+    margin: 0 auto;
+}
 /* Secondary Button */
 .btn-secondary {
     background-color: var(--color-background-secondary);
@@ -614,4 +618,22 @@
     background-repeat: no-repeat;
     background-position: right 10px center;
     padding-right: 40px !important;
+}
+
+.weather-icon-container .weather-icon,
+.weather-icon-container .weather-condition {
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.weather-icon-fallback {
+    width: 80px;
+    height: 80px;
+    background: var(--color-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 2rem;
 }

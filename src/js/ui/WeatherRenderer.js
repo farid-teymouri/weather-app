@@ -8,6 +8,10 @@
 import { formatTemperature, formatWindSpeed, getWeatherIcon } from '../utils/helpers.js';
 import { a11yAnnounce } from '../utils/a11y.js';
 
+if (typeof DOMParser === 'undefined') {
+    console.error('[WeatherRenderer] DOMParser not supported in this browser');
+}
+
 export class WeatherRenderer {
     constructor() {
         this.elements = {
@@ -73,22 +77,67 @@ export class WeatherRenderer {
                 tempUnit.textContent = units === 'metric' ? '°C' : '°F';
             }
 
-            // Weather icon
+            // Weather icon and condition text update - COMPLETE REBUILD STRATEGY
             const weatherIconContainer = weatherCard.querySelector('.weather-icon-container');
-            const weatherCondition = weatherCard.querySelector('.weather-condition');
-
             if (weatherIconContainer && weatherData.weather?.[0]) {
-                const iconSvg = getWeatherIcon(weatherData.weather[0].main);
-                // Replace entire container content to avoid outerHTML issues
-                weatherIconContainer.innerHTML = `
-          <div class="weather-icon-wrapper">
-            ${iconSvg}
-          </div>
-          ${weatherCondition ? `<p class="weather-condition">${this._capitalizeFirstLetter(weatherData.weather[0].description)}</p>` : ''}
-        `;
+                const weather = weatherData.weather[0];
+                const iconSvg = getWeatherIcon(weather.main); // Returns full SVG string
+                const conditionText = this._capitalizeFirstLetter(weather.description);
 
-                // Remove skeleton from container
-                weatherIconContainer.classList.remove('skeleton');
+                // ✅ CRITICAL FIX 1: Clear container COMPLETELY before rebuild
+                weatherIconContainer.innerHTML = '';
+
+                // Parse SVG string safely
+                const parser = new DOMParser();
+                const svgDoc = parser.parseFromString(iconSvg.trim(), 'image/svg+xml');
+                const svgElement = svgDoc.documentElement;
+
+                // Validate SVG parsing
+                if (svgElement.tagName.toLowerCase() === 'svg') {
+                    // Configure SVG element
+                    svgElement.classList.add('weather-icon');
+                    svgElement.setAttribute('aria-hidden', 'true');
+                    svgElement.setAttribute('role', 'img');
+                    svgElement.style.opacity = '0'; // For fade-in effect
+
+                    // Append SVG to container
+                    weatherIconContainer.appendChild(svgElement);
+
+                    // ✅ CRITICAL FIX 2: Recreate condition text element (was being destroyed)
+                    const conditionEl = document.createElement('p');
+                    conditionEl.className = 'weather-condition';
+                    conditionEl.textContent = conditionText;
+                    conditionEl.setAttribute('aria-label', `Weather condition: ${conditionText}`);
+                    conditionEl.style.opacity = '0';
+                    weatherIconContainer.appendChild(conditionEl);
+
+                    // Apply smooth fade-in transition to both elements
+                    requestAnimationFrame(() => {
+                        svgElement.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                        svgElement.style.opacity = '1';
+
+                        conditionEl.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.1s';
+                        conditionEl.style.opacity = '1';
+                    });
+
+                    // Remove skeleton state from container
+                    weatherIconContainer.classList.remove('skeleton');
+
+                    console.log(`[WeatherRenderer] Updated icon to: ${weather.main} (${conditionText})`);
+                } else {
+                    // Fallback if SVG parsing fails
+                    console.error('[WeatherRenderer] Failed to parse weather icon SVG');
+                    weatherIconContainer.innerHTML = `
+            <div class="weather-icon-fallback" aria-label="Weather icon unavailable">
+                <span class="fallback-text">${weather.main.charAt(0)}</span>
+            </div>
+            <p class="weather-condition">${conditionText}</p>
+        `;
+                    weatherIconContainer.classList.remove('skeleton');
+                }
+                console.log('Container children:', weatherIconContainer.children.length);
+                console.log('First child:', weatherIconContainer.firstChild?.tagName);
+                console.log('Condition text:', weatherIconContainer.querySelector('.weather-condition')?.textContent);
             }
 
             // Weather details
