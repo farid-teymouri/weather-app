@@ -106,13 +106,24 @@ export class WeatherRenderer {
 
     /**
      * Render weather details (feels like, humidity, wind, pressure)
+     * Includes defensive checks to prevent "--" display on missing data
      * @private
      * @param {HTMLElement} weatherCard - Weather card element
-     * @param {Object} weatherData - Weather data
+     * @param {Object} weatherData - Weather data with complete fields
      * @param {string} units - Temperature units
      */
     _renderWeatherDetails(weatherCard, weatherData, units) {
         const detailItems = weatherCard.querySelectorAll('.detail-item');
+
+        // Defensive check: ensure weatherData.main exists
+        if (!weatherData || !weatherData.main) {
+            console.warn('[WeatherRenderer] Missing weatherData.main, using fallback values');
+            detailItems.forEach((item) => {
+                const valueEl = item.querySelector('.detail-value');
+                if (valueEl) valueEl.textContent = '--';
+            });
+            return;
+        }
 
         detailItems.forEach((item, index) => {
             const valueElement = item.querySelector('.detail-value');
@@ -123,12 +134,12 @@ export class WeatherRenderer {
             try {
                 switch (index) {
                     case 0: // Feels like
-                        if (weatherData.main?.feels_like !== undefined) {
+                        if (typeof weatherData.main.feels_like === 'number') {
                             value = `${formatTemperature(weatherData.main.feels_like, units)}°`;
                         }
                         break;
                     case 1: // Humidity
-                        if (weatherData.main?.humidity !== undefined) {
+                        if (typeof weatherData.main.humidity === 'number') {
                             value = `${weatherData.main.humidity}%`;
                         }
                         break;
@@ -140,7 +151,7 @@ export class WeatherRenderer {
                         }
                         break;
                     case 3: // Pressure
-                        if (weatherData.main?.pressure !== undefined) {
+                        if (typeof weatherData.main.pressure === 'number') {
                             value = `${weatherData.main.pressure} hPa`;
                         }
                         break;
@@ -152,6 +163,12 @@ export class WeatherRenderer {
 
             valueElement.textContent = value;
             valueElement.classList.remove('skeleton');
+
+            // Add ARIA label for screen readers
+            valueElement.setAttribute(
+                'aria-label',
+                `${item.querySelector('.detail-label')?.textContent || 'Value'}: ${value}`
+            );
         });
     }
 
