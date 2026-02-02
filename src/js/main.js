@@ -20,10 +20,12 @@ const APP_CONFIG = {
     // Default units (metric = Celsius, imperial = Fahrenheit)
     defaultUnits: 'metric',
 
-    // Default fallback location (San Francisco coordinates)
+    // Default location to Tehran, Iran
     defaultLocation: {
-        lat: 37.7749,
-        lon: -122.4194,
+        lat: 35.6892, // Tehran coordinates
+        lon: 51.389,
+        name: 'Tehran', // Added name for immediate display
+        country: 'IR',
     },
 
     // Enable debug mode in development

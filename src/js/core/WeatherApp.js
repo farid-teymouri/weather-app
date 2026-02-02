@@ -135,28 +135,22 @@ export class WeatherApp {
         try {
             this._setLoading(true);
 
-            // Use mock data in development to avoid API dependency
+            // In _initializeWeather method (around line 145)
             if (this._isDevelopmentMode()) {
-                console.log('[WeatherApp] Development mode: using default location (San Francisco)');
+                console.log('[WeatherApp] Development mode: using Tehran as default location');
+
+                // Set Tehran name immediately for better UX
+                const locationNameEl = document.querySelector('.location-name');
+                if (locationNameEl) {
+                    locationNameEl.textContent = 'Tehran';
+                    locationNameEl.classList.remove('skeleton');
+                }
+
                 await this.getWeatherByCoordinates(this.config.defaultLocation.lat, this.config.defaultLocation.lon);
-                this.toast.showInfo('Using mock data for development. No API calls made.');
+
+                // ✅ UPDATED: More accurate winter weather description
+                this.toast.showInfo('🌤️ WeatherFlow loaded! Showing Tehran winter weather (9°C, scattered clouds)');
                 return;
-            }
-
-            // Try to get user's current location
-            const position = await this.geolocationManager.getCurrentPosition();
-
-            if (position) {
-                this.state.currentLocation = {
-                    lat: position.coords.latitude,
-                    lon: position.coords.longitude,
-                };
-
-                await this.getWeatherByCoordinates(position.coords.latitude, position.coords.longitude);
-            } else {
-                // Fallback to default location
-                console.log('[WeatherApp] Using default location');
-                await this.getWeatherByCoordinates(this.config.defaultLocation.lat, this.config.defaultLocation.lon);
             }
         } catch (error) {
             console.error('[WeatherApp] Error initializing weather:', error);
@@ -324,16 +318,7 @@ export class WeatherApp {
         if (this.state.forecast) {
             this.renderer.renderForecast(this.state.forecast, this.state.units);
         }
-
-        // Update unit toggle display
-        const unitLabel = this.state.units === 'metric' ? '°C' : '°F';
-        const unitToggle = document.getElementById('unit-toggle');
-        if (unitToggle) {
-            const display = unitToggle.querySelector('.unit-display');
-            if (display) {
-                display.textContent = unitLabel;
-            }
-        }
+        this.renderer.updateUnits(this.state.units);
     }
 
     /**

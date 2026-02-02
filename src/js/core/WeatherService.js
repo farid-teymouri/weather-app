@@ -196,18 +196,69 @@ export class WeatherService {
         // Generate deterministic seed from coordinates for consistent results
         const seed = Math.abs(Math.sin(lat * lon + lat + lon) * 10000);
 
-        // Calculate base temperature based on latitude (warmer near equator)
-        // Formula: 30°C at equator (0°), decreases by ~0.4°C per degree latitude
-        const baseTempC = 30 - Math.abs(lat) * 0.4;
+        // ✅ REALISTIC TEHRAN WINTER WEATHER (December-February)
+        // Tehran coordinates: 35.6892°N, 51.3890°E
+        const isTehran = Math.abs(lat - 35.6892) < 0.1 && Math.abs(lon - 51.389) < 0.1;
 
-        // Add small deterministic variation based on coordinates
-        const tempVariation = (seed % 7) - 3; // Range: -3 to +3
+        if (isTehran) {
+            // Authentic Tehran winter weather details (typical January day)
+            const tempC = 9; // Realistic winter temperature for Tehran
+            const temp = units === 'metric' ? tempC : Math.round((tempC * 9) / 5 + 32);
+
+            return {
+                name: 'Tehran',
+                sys: {
+                    country: 'IR',
+                    sunrise: Math.floor(Date.now() / 1000) + 12600, // ~6:30 AM local winter sunrise
+                    sunset: Math.floor(Date.now() / 1000) + 45000, // ~5:30 PM local winter sunset
+                },
+                main: {
+                    temp: temp,
+                    feels_like: units === 'metric' ? 6 : 43, // Wind chill factor
+                    temp_min: units === 'metric' ? 7 : 45,
+                    temp_max: units === 'metric' ? 11 : 52,
+                    pressure: 1020, // Slightly higher winter pressure
+                    humidity: 45, // Typical winter humidity for Tehran
+                },
+                weather: [
+                    {
+                        main: 'Clouds',
+                        description: 'scattered clouds',
+                        icon: '03d', // Partially cloudy winter sky
+                    },
+                ],
+                wind: {
+                    speed: units === 'metric' ? 3.2 : 7.2, // Light breeze
+                    deg: 315, // Common northwesterly wind direction in Tehran winter
+                },
+                clouds: { all: 40 }, // 40% cloud coverage typical for winter
+                dt: Math.floor(Date.now() / 1000),
+                timezone: 12600, // UTC+3:30 (Iran Standard Time)
+                coord: { lat: 35.6892, lon: 51.389 },
+            };
+        }
+        // Calculate base temperature based on latitude with seasonal adjustment
+        const month = new Date().getMonth(); // 0 = January, 11 = December
+        const isWinter = month >= 11 || month <= 2; // Nov-Feb = winter in Northern Hemisphere
+
+        let baseTempC = 30 - Math.abs(lat) * 0.4;
+
+        // Apply seasonal adjustment
+        if (lat > 0) {
+            // Northern Hemisphere
+            if (isWinter)
+                if (isWinter)
+                    baseTempC -= 10; // Winter cooling
+                else if (month >= 5 && month <= 8) baseTempC += 2; // Summer warming
+        } else {
+            // Southern Hemisphere (opposite seasons)
+            if (!isWinter) baseTempC -= 10;
+            else if (month >= 5 && month <= 8) baseTempC += 2;
+        }
+
+        const tempVariation = (seed % 7) - 3;
         let tempC = baseTempC + tempVariation;
-
-        // Clamp to realistic global range
         tempC = Math.max(-15, Math.min(45, tempC));
-
-        // Convert to selected units
         const temp = units === 'metric' ? Math.round(tempC) : Math.round((tempC * 9) / 5 + 32);
 
         // Determine weather condition based on latitude zones
@@ -254,35 +305,34 @@ export class WeatherService {
         const timezoneOffset = Math.round(lon / 15) * 3600;
 
         return {
-            // Note: name/country will be overridden by WeatherApp
             name: 'Unknown Location',
             sys: {
                 country: 'XX',
-                sunrise: Math.floor(Date.now() / 1000) + timezoneOffset + 21600, // +6 hours
-                sunset: Math.floor(Date.now() / 1000) + timezoneOffset + 64800, // +18 hours
+                sunrise: Math.floor(Date.now() / 1000) + 21600,
+                sunset: Math.floor(Date.now() / 1000) + 64800,
             },
             main: {
                 temp: temp,
-                feels_like: temp - 1,
-                temp_min: temp - 3,
+                feels_like: temp - 2,
+                temp_min: temp - 4,
                 temp_max: temp + 3,
                 pressure: 1015,
-                humidity: humidity,
+                humidity: isWinter ? 60 : 40, // Higher humidity in winter
             },
             weather: [
                 {
-                    main: condition,
-                    description: description,
-                    icon: icon,
+                    main: isWinter ? 'Clouds' : 'Clear',
+                    description: isWinter ? 'scattered clouds' : 'clear sky',
+                    icon: isWinter ? '03d' : '01d',
                 },
             ],
             wind: {
                 speed: units === 'metric' ? 3.6 : 8,
-                deg: windDeg,
+                deg: Math.round(seed * 360) % 360,
             },
-            clouds: { all: condition === 'Clouds' ? 75 : condition === 'Rain' ? 90 : 10 },
+            clouds: { all: isWinter ? 45 : 15 },
             dt: Math.floor(Date.now() / 1000),
-            timezone: timezoneOffset,
+            timezone: Math.round(lon / 15) * 3600,
             coord: { lat: lat, lon: lon },
         };
     }
