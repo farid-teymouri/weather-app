@@ -226,7 +226,29 @@ export class WeatherService {
             window.location.protocol === 'file:'
         );
     }
+    // Update _buildWeatherUrl method
+    _buildWeatherUrl(lat, lon, units) {
+        // ✅ Use FREE current weather endpoint with type parameter
+        const params = new URLSearchParams({
+            lat: lat.toString(),
+            lon: lon.toString(),
+            units: units,
+            type: 'current', // Critical for Edge Function routing
+        });
+        return `${this.apiBase}?${params.toString()}`;
+    }
 
+    // Update _buildForecastUrl method
+    _buildForecastUrl(lat, lon, units) {
+        // ✅ Use FREE forecast endpoint with type parameter
+        const params = new URLSearchParams({
+            lat: lat.toString(),
+            lon: lon.toString(),
+            units: units,
+            type: 'forecast', // Critical for Edge Function routing
+        });
+        return `${this.apiBase}?${params.toString()}`;
+    }
     /**
      * Generate location-specific mock weather data with diverse conditions
      * Uses coordinates to create deterministic but varied weather patterns
@@ -355,46 +377,6 @@ export class WeatherService {
      * @returns {Object} Complete weather data object
      */
     _buildWeatherData(params) {
-        return {
-            name: params.name,
-            sys: {
-                country: params.country,
-                sunrise: Math.floor(Date.now() / 1000) + params.timezone + 21600,
-                sunset: Math.floor(Date.now() / 1000) + params.timezone + 64800,
-            },
-            main: {
-                temp: params.temp,
-                feels_like: params.feelsLike,
-                temp_min: params.tempMin,
-                temp_max: params.tempMax,
-                pressure: params.pressure,
-                humidity: params.humidity,
-            },
-            weather: [
-                {
-                    main: params.condition,
-                    description: params.description,
-                    icon: this._getWeatherIconCode(params.condition),
-                },
-            ],
-            wind: {
-                speed: params.windSpeed,
-                deg: params.windDeg,
-            },
-            clouds: { all: params.clouds },
-            dt: Math.floor(Date.now() / 1000),
-            timezone: params.timezone,
-            coord: { lat: params.lat, lon: params.lon },
-        };
-    }
-    /**
-     * Helper method to create standardized weather data object
-     * Ensures all required fields are present for renderer
-     * @private
-     * @param {Object} params - Weather data parameters
-     * @returns {Object} Complete weather data object
-     */
-    _createWeatherData(params) {
         return {
             name: params.name,
             sys: {
@@ -716,5 +698,158 @@ export class WeatherService {
                 lon: parseFloat(result.lon),
             }))
             .slice(0, 5); // Limit to 5 results
+    }
+
+    /**
+     * Validate latitude and longitude coordinates
+     * @private
+     * @param {number} lat - Latitude
+     * @param {number} lon - Longitude
+     * @throws {Error} If coordinates are invalid
+     */
+    _validateCoordinates(lat, lon) {
+        if (typeof lat !== 'number' || typeof lon !== 'number') {
+            throw new Error('Coordinates must be numbers');
+        }
+
+        if (lat < -90 || lat > 90) {
+            throw new Error('Latitude must be between -90 and 90');
+        }
+
+        if (lon < -180 || lon > 180) {
+            throw new Error('Longitude must be between -180 and 180');
+        }
+    }
+
+    /**
+     * Validate temperature units
+     * @private
+     * @param {string} units - Units to validate
+     * @throws {Error} If units are invalid
+     */
+    _validateUnits(units) {
+        if (!['metric', 'imperial'].includes(units)) {
+            throw new Error('Units must be "metric" or "imperial"');
+        }
+    }
+
+    /**
+     * Generate cache key for weather data
+     * @private
+     * @param {number} lat - Latitude
+     * @param {number} lon - Longitude
+     * @param {string} units - Temperature units
+     * @param {string} type - Data type ('current' or 'forecast')
+     * @returns {string} Cache key
+     */
+    _generateCacheKey(lat, lon, units, type = 'current') {
+        return `${type}_${lat}_${lon}_${units}`;
+    }
+
+    /**
+     * Get cached data if still valid
+     * @private
+     * @param {string} key - Cache key
+     * @returns {Object|null} Cached data or null
+     */
+    _getCachedData(key) {
+        const cached = this.cache.get(key);
+
+        if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+            return cached.data;
+        }
+
+        // Remove expired cache entry
+        if (cached) {
+            this.cache.delete(key);
+        }
+
+        return null;
+    }
+
+    /**
+     * Cache weather data
+     * @private
+     * @param {string} key - Cache key
+     * @param {Object} data - Data to cache
+     */
+    _cacheData(key, data) {
+        this.cache.set(key, {
+            data,
+            timestamp: Date.now(),
+        });
+    }
+
+    /**
+     * Sanitize weather data to prevent XSS attacks
+     * @private
+     * @param {Object} data - Raw weather data
+     * @returns {Object} Sanitized data
+     */
+    _sanitizeWeatherData(data) {
+        // Deep clone to avoid modifying original data
+        const sanitized = JSON.parse(JSON.stringify(data));
+
+        // Sanitize string fields
+        if (sanitized.name) {
+            sanitized.name = this._sanitizeString(sanitized.name);
+        }
+
+        if (sanitized.weather && Array.isArray(sanitized.weather)) {
+            sanitized.weather = sanitized.weather.map((item) => ({
+                ...item,
+                description: item.description ? this._sanitizeString(item.description) : '',
+                main: item.main ? this._sanitizeString(item.main) : '',
+            }));
+        }
+
+        return sanitized;
+    }
+
+    /**
+     * Sanitize forecast data
+     * @private
+     * @param {Object} data - Raw forecast data
+     * @returns {Object} Sanitized forecast data
+     */
+    _sanitizeForecastData(data) {
+        const sanitized = JSON.parse(JSON.stringify(data));
+
+        // Process daily forecast items
+        if (sanitized.daily && Array.isArray(sanitized.daily)) {
+            sanitized.daily = sanitized.daily.map((day) => ({
+                ...day,
+                weather:
+                    day.weather && Array.isArray(day.weather)
+                        ? day.weather.map((item) => ({
+                              ...item,
+                              description: item.description ? this._sanitizeString(item.description) : '',
+                              main: item.main ? this._sanitizeString(item.main) : '',
+                          }))
+                        : [],
+            }));
+        }
+
+        return sanitized;
+    }
+
+    /**
+     * Sanitize string to prevent XSS
+     * @private
+     * @param {string} str - String to sanitize
+     * @returns {string} Sanitized string
+     */
+    _sanitizeString(str) {
+        if (typeof str !== 'string') {
+            return '';
+        }
+
+        // Basic HTML entity encoding
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 }
