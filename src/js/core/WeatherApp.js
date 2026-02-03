@@ -48,7 +48,8 @@ export class WeatherApp {
             currentWeather: null,
             forecast: null,
             favorites: [],
-            units: this.storageManager.getUnits() || this.config.defaultUnits,
+            //  FORCE CELSIUS IN DEVELOPMENT MODE (ignore saved preferences)
+            units: this._isDevelopmentMode() ? 'metric' : this.storageManager.getUnits() || this.config.defaultUnits,
             isLoading: false,
             error: null,
             currentLocation: null,
@@ -135,7 +136,7 @@ export class WeatherApp {
         try {
             this._setLoading(true);
 
-            // In _initializeWeather method (around line 145)
+            // Use mock data in development to avoid API dependency
             if (this._isDevelopmentMode()) {
                 console.log('[WeatherApp] Development mode: using Tehran as default location');
 
@@ -146,10 +147,15 @@ export class WeatherApp {
                     locationNameEl.classList.remove('skeleton');
                 }
 
+                // ✅ FORCE CELSIUS DISPLAY IN DEVELOPMENT
+                this.state.units = 'metric';
+                this.renderer.updateUnits('metric');
+
                 await this.getWeatherByCoordinates(this.config.defaultLocation.lat, this.config.defaultLocation.lon);
 
-                // ✅ UPDATED: More accurate winter weather description
-                this.toast.showInfo('🌤️ WeatherFlow loaded! Showing Tehran winter weather (9°C, scattered clouds)');
+                this.toast.showInfo(
+                    '🌤️ WeatherFlow loaded! Tehran winter weather (9°C, scattered clouds). Units: Celsius'
+                );
                 return;
             }
         } catch (error) {

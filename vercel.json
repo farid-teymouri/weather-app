@@ -1,0 +1,68 @@
+{
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
+    "framework": "vite",
+    "functions": {
+        "api/weather.js": {
+            "maxDuration": 10
+        }
+    },
+    "headers": [
+        {
+            "source": "/(.*)",
+            "headers": [
+                {
+                    "key": "X-Content-Type-Options",
+                    "value": "nosniff"
+                },
+                {
+                    "key": "X-Frame-Options",
+                    "value": "DENY"
+                },
+                {
+                    "key": "X-XSS-Protection",
+                    "value": "1; mode=block"
+                },
+                {
+                    "key": "Referrer-Policy",
+                    "value": "strict-origin-when-cross-origin"
+                },
+                {
+                    "key": "Permissions-Policy",
+                    "value": "geolocation=(), microphone=(), camera=()"
+                }
+            ]
+        },
+        {
+            "source": "/service-worker.js",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=0, must-revalidate"
+                }
+            ]
+        },
+        {
+            "source": "/manifest.json",
+            "headers": [
+                {
+                    "key": "Content-Type",
+                    "value": "application/manifest+json"
+                }
+            ]
+        }
+    ],
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ],
+    "redirects": [
+        {
+            "source": "/api/(.*)",
+            "destination": "/api/$1",
+            "permanent": false
+        }
+    ]
+}

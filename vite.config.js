@@ -1,68 +1,42 @@
-/**
- * Vite Configuration
- * Build and development server configuration
- */
-
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
     root: '.',
-    base: '/',
-    publicDir: './public',
+    base: '/', // ✅ Essential for Vercel routing
+    publicDir: 'public',
 
     build: {
-        outDir: '../dist',
+        outDir: 'dist', // ✅ Must match vercel.json
         assetsDir: 'assets',
         rollupOptions: {
             input: {
                 main: resolve(__dirname, 'public/index.html'),
             },
-            output: {
-                entryFileNames: 'assets/[name].[hash].js',
-                chunkFileNames: 'assets/[name].[hash].js',
-                assetFileNames: 'assets/[name].[hash].[ext]',
-            },
         },
         minify: 'terser',
         terserOptions: {
             compress: {
-                drop_console: true,
+                drop_console: true, // ✅ Remove console in production
                 drop_debugger: true,
             },
         },
-        sourcemap: false,
+        sourcemap: false, // ✅ No source maps in production
         reportCompressedSize: true,
     },
 
     server: {
         port: 5173,
-        open: true,
+        open: false, // ✅ Don't auto-open in Vercel build
         strictPort: true,
-        host: true,
-        proxy: {
-            '/api': {
-                target: 'http://localhost:3000',
-                changeOrigin: true,
-                secure: false,
-            },
-        },
     },
 
-    optimizeDeps: {
-        include: [],
-    },
-
+    // ✅ Critical: Resolve aliases for production
     resolve: {
         alias: {
             '@': resolve(__dirname, './src'),
             '@js': resolve(__dirname, './src/js'),
             '@css': resolve(__dirname, './src/css'),
-            '@assets': resolve(__dirname, './src/assets'),
         },
-    },
-
-    define: {
-        'process.env': process.env,
     },
 });
