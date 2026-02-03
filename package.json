@@ -32,13 +32,14 @@
     },
     "homepage": "https://github.com/farid-teymouri/weather-app#readme",
     "devDependencies": {
-        "vite": "^5.0.0",
-        "prettier": "^3.0.0",
         "eslint": "^8.50.0",
         "eslint-config-prettier": "^9.0.0",
         "eslint-plugin-jsdoc": "^46.0.0",
         "husky": "^8.0.0",
-        "lint-staged": "^15.0.0"
+        "lint-staged": "^15.0.0",
+        "prettier": "^3.0.0",
+        "vite": "^5.0.0",
+        "terser": "^5.31.0"
     },
     "lint-staged": {
         "**/*.{js,css,html,json,md}": [
@@ -49,8 +50,7 @@
         ]
     },
     "engines": {
-        "node": "24.x",
-        "npm": "9.6.7"
+        "node": "24.x"
     },
     "browserslist": [
         "last 2 versions",
