@@ -11,6 +11,25 @@ A professional, fully-featured weather application built with **vanilla JavaScri
 [![PWA](https://img.shields.io/badge/PWA-Enabled-brightgreen?logo=pwa)](https://web.dev/progressive-web-apps/)
 [![WCAG 2.1 AA](https://img.shields.io/badge/Accessibility-WCAG%202.1%20AA-blue?logo=accessibility)](https://www.w3.org/WAI/WCAG21/quickref/)
 
+## 🌐 Live Demo
+
+Experience the application live with real weather
+
+[![Live Demo](https://img.shields.io/badge/Demo-Live%20on%20Vercel-000000?logo=vercel&logoColor=ffffff)](https://weather-app-coral-nu-37.vercel.app)
+
+🔗 **Direct Link**: https://weather-app-coral-nu-37.vercel.app
+
+✨ Features in live demo:
+
+- Real-time weather data from OpenWeatherMap API
+- Full PWA capabilities (installable on any device)
+- Dark/light mode with system preference detection
+- 7-day forecast with detailed conditions
+- Location search with autocomplete
+- Favorites system with persistent storage
+- WCAG 2.1 AA compliant accessibility
+- Optimized performance (95+ Lighthouse score)
+
 ## ✨ Features
 
 ### 🌍 Core Functionality
@@ -57,63 +76,74 @@ A professional, fully-featured weather application built with **vanilla JavaScri
 
 ```bash
 weather-app/
-├── .github/
-│ └── workflows/
-│ └── deploy.yml # CI/CD for GitHub Pages
-├── public/ # Deployment-ready assets
-│ ├── index.html # Semantic HTML5 structure
-│ ├── manifest.json # PWA manifest
-│ ├── service-worker.js # Advanced caching strategy
-│ ├── icons/
-│ │ ├── icon-192.svg
-│ │ ├── icon-512.svg
-│ │ └── weather-icons/ # Condition-specific icons
-│ └── screenshot.svg # App preview (this file)
+├── api/                    # Vercel Edge Functions
+│   └── weather.js          # Secure weather API proxy
+├── netlify/                # Netlify Functions (alternative deployment)
+│   └── functions/
+│       └── weather.js
+├── public/                 # Static assets (served directly)
+│   ├── icons/
+│   │   ├── icon-192.svg
+│   │   ├── icon-512.svg
+│   │   └── weather-icons/  # Condition-specific icons
+│   ├── index.html          # Semantic HTML5 structure
+│   ├── manifest.json       # PWA manifest
+│   ├── screenshot.svg      # App preview
+│   └── service-worker.js   # Advanced caching strategy
+├── scripts/
+│   └── fix-html-paths.js   # Utility script for correcting asset paths in HTML
 ├── src/
-│ ├── assets/
-│ │ └── icons/ # SVG icon system
-│ │ ├── location.svg
-│ │ ├── search.svg
-│ │ ├── favorite.svg
-│ │ ├── theme.svg
-│ │ ├── refresh.svg
-│ │ └── weather/ # Weather condition icons
-│ ├── css/
-│ │ ├── _variables.css # Theming system (WCAG compliant)
-│ │ ├── _base.css # CSS reset + accessibility foundations
-│ │ ├── _components.css # BEM-named UI components
-│ │ ├── _layout.css # Responsive grid system
-│ │ ├── _utilities.css # Accessibility/utility classes
-│ │ └── main.css # Cascade-controlled imports
-│ ├── js/
-│ │ ├── core/ # Business logic (zero DOM access)
-│ │ │ ├── WeatherApp.js # Main application orchestrator
-│ │ │ ├── WeatherService.js # Secure API abstraction
-│ │ │ ├── GeolocationManager.js # Permission handling
-│ │ │ ├── StorageManager.js # Encrypted storage wrapper
-│ │ │ └── ThemeManager.js # System-preference aware theming
-│ │ ├── ui/ # Pure presentation layer
-│ │ │ ├── WeatherRenderer.js # Virtual DOM-inspired renderer
-│ │ │ ├── SearchManager.js # Debounced search + autocomplete
-│ │ │ ├── FavoritesManager.js # Favorite locations UI
-│ │ │ ├── Toast.js # WCAG 2.1 compliant notifications
-│ │ │ └── LoadingSpinner.js # Perceptible loading states
-│ │ ├── utils/
-│ │ │ ├── helpers.js # Pure utility functions
-│ │ │ ├── constants.js # Environment-safe constants
-│ │ │ ├── validators.js # Input sanitization
-│ │ │ └── a11y.js # Accessibility helpers
-│ │ └── main.js # Dependency injection entry point
-│ └── lib/ # Zero-dependency polyfills
+│   ├── assets/
+│   │   └── icons/          # SVG icon system
+│   │       ├── favorite.svg
+│   │       ├── location.svg
+│   │       ├── refresh.svg
+│   │       ├── search.svg
+│   │       ├── theme.svg
+│   │       └── weather/    # Weather condition icons
+│   ├── css/
+│   │   ├── _base.css       # CSS reset + accessibility foundations
+│   │   ├── _components.css # BEM-named UI components
+│   │   ├── _layout.css     # Responsive grid system
+│   │   ├── _utilities.css  # Accessibility/utility classes
+│   │   ├── _variables.css  # Theming system (WCAG compliant)
+│   │   └── main.css        # Cascade-controlled imports
+│   └── js/
+│       ├── core/           # Business logic (zero DOM access)
+│       │   ├── GeolocationManager.js   # Permission handling
+│       │   ├── StorageManager.js       # Encrypted storage wrapper
+│       │   ├── ThemeManager.js         # System-preference aware theming
+│       │   ├── WeatherApp.js           # Main application orchestrator
+│       │   └── WeatherService.js       # Secure API abstraction
+│       ├── ui/             # Pure presentation layer
+│       │   ├── FavoritesManager.js     # Favorite locations UI
+│       │   ├── LoadingSpinner.js       # Perceptible loading states
+│       │   ├── SearchManager.js        # Debounced search + autocomplete
+│       │   ├── Toast.js                # WCAG 2.1 compliant notifications
+│       │   └── WeatherRenderer.js      # Virtual DOM-inspired renderer
+│       ├── utils/          # Utility modules
+│       │   ├── a11y.js                 # Accessibility helpers
+│       │   ├── constants.js            # Environment-safe constants
+│       │   ├── helpers.js              # Pure utility functions
+│       │   └── validators.js           # Input sanitization
+│       └── main.js         # Dependency injection entry point
 ├── .editorconfig
+├── .eslintignore           # (optional, if needed alongside .eslintrc.js)
+├── .eslintrc.js            # ESLint configuration (root-level)
 ├── .gitignore
+├── .nvmrc                  # Node.js version specification
 ├── .prettierrc
-├── build.js # Asset optimization pipeline
-├── netlify.toml # Security headers + redirect rules
-├── package.json
-├── SECURITY.md # Critical security setup guide
+├── .vercelignore           # Vercel deployment ignore rules
+├── build.js                # Asset optimization pipeline
+├── CHANGELOG.md
+├── CONTRIBUTING.md
 ├── LICENSE
-└── README.md
+├── netlify.toml            # Netlify security headers + redirect rules
+├── package.json
+├── README.md
+├── SECURITY.md             # Critical security setup guide
+├── vercel.json             # Vercel deployment configuration
+└── vite.config.js          # Vite build configuration
 ```
 
 ## 🚀 Getting Started
@@ -131,11 +161,11 @@ weather-app/
 1. Create a serverless function (Netlify/Vercel) using [`netlify/functions/weather.js`](netlify/functions/weather.js)
 2. Set environment variable `WEATHER_API_KEY` in your hosting platform
 3. Update proxy endpoint in [`src/js/core/WeatherService.js`](src/js/core/WeatherService.js):
-   ```js
-   this.apiBase = "/.netlify/functions/weather"; // For Netlify
-   // OR
-   this.apiBase = "/api/weather"; // For Vercel
-   ```
+    ```js
+    this.apiBase = '/.netlify/functions/weather'; // For Netlify
+    // OR
+    this.apiBase = '/api/weather'; // For Vercel
+    ```
 
 ## 📖 Full security setup guide: See SECURITY.md
 
@@ -228,10 +258,10 @@ async getWeather({ lat, lon }) {
 
 ```css
 :root {
-  --color-primary: #4c6fff; /* Main accent color */
-  --color-secondary: #8c52ff; /* Secondary accent */
-  --color-sunny: #f6ad55; /* Weather-specific colors */
-  /* ... update all semantic color variables */
+    --color-primary: #4c6fff; /* Main accent color */
+    --color-secondary: #8c52ff; /* Secondary accent */
+    --color-sunny: #f6ad55; /* Weather-specific colors */
+    /* ... update all semantic color variables */
 }
 ```
 
