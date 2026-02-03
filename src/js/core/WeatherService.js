@@ -28,7 +28,25 @@ export class WeatherService {
         this.REQUEST_COOLDOWN = 1000; // 1 second minimum between requests
         this.CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
     }
+    async _fetchWithTimeout(url, options = {}, timeout = 8000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
 
+        try {
+            const response = await fetch(url, {
+                ...options,
+                signal: controller.signal,
+            });
+            clearTimeout(timeoutId);
+            return response;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error('Request timeout. Please check your connection.');
+            }
+            throw error;
+        }
+    }
     /**
      * Get current weather for specific coordinates
      * Automatically uses mock data in development mode
@@ -177,7 +195,7 @@ export class WeatherService {
             await this._throttleRequest();
 
             // Fetch forecast data from API
-            const response = await fetch(this._buildForecastUrl(lat, lon, units), {
+            const response = await this._fetchWithTimeout(this._buildWeatherUrl(lat, lon, units), {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
