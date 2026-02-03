@@ -47,4 +47,4 @@ temp/
 *.key
 
 # Netlify
-.netlify/
+.netlify/.env

@@ -15,7 +15,7 @@ const APP_CONFIG = {
     // API base URL - should be configured based on deployment environment
     // For local development with Netlify Dev: '/.netlify/functions/weather'
     // For production: '/api/weather'
-    apiBase: '/.netlify/functions/weather',
+    apiBase: '/api/weather',
 
     // Default units (metric = Celsius, imperial = Fahrenheit)
     defaultUnits: 'metric',

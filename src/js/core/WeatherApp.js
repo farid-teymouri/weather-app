@@ -132,53 +132,118 @@ export class WeatherApp {
      * Automatically uses mock data in development mode
      * @private
      */
+    /**
+     * Initialize weather data
+     * Handles both development (mock data) and production (real API) modes
+     * @private
+     */
     async _initializeWeather() {
         try {
             this._setLoading(true);
 
-            // Development mode: use mock data + show badge
+            // ========== DEVELOPMENT MODE (localhost) ==========
             if (this._isDevelopmentMode()) {
-                // ... [existing badge code] ...
+                console.log('[WeatherApp] Development mode: using simulated Tehran weather');
+
+                // Set Tehran name immediately for better UX
+                const locationNameEl = document.querySelector('.location-name');
+                if (locationNameEl) {
+                    locationNameEl.textContent = 'Tehran';
+                    locationNameEl.classList.remove('skeleton');
+                }
+
+                // Force Celsius units
+                this.state.units = 'metric';
+                this.renderer.updateUnits('metric');
+
+                // Load Tehran weather (uses mock data automatically)
                 await this.getWeatherByCoordinates(35.6892, 51.389);
-                this.toast.showInfo('🌤️ Tehran weather loaded (simulated data)');
-                return;
+
+                // Show dev mode badge
+                const badge = document.createElement('div');
+                badge.className = 'dev-badge';
+                badge.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                Simulated climate data (development mode)
+            `;
+                const header = document.querySelector('.header');
+                if (header) header.appendChild(badge);
+
+                this.toast.showInfo('🌤️ Tehran winter weather loaded (9°C, scattered clouds). Units: Celsius');
+                return; // Exit early - dev mode complete
             }
 
-            // Production mode: try real API with fallback
-            console.log('[WeatherApp] Production mode: loading real weather data...');
+            // ========== PRODUCTION MODE (Vercel) ==========
+            console.log('[WeatherApp] Production mode: loading real weather data from API');
 
             try {
-                // Try geolocation first
+                // Attempt 1: Get user's current location via geolocation
+                console.log('[WeatherApp] Attempting geolocation...');
                 const position = await this.geolocationManager.getCurrentPosition();
-                await this.getWeatherByCoordinates(position.coords.latitude, position.coords.longitude);
-            } catch (geoError) {
-                console.warn('[WeatherApp] Geolocation failed, using default location:', geoError);
 
-                // Fallback to Tehran (or your preferred default)
-                await this.getWeatherByCoordinates(35.6892, 51.389);
+                if (position) {
+                    console.log(
+                        `[WeatherApp] Geolocation successful: ${position.coords.latitude}, ${position.coords.longitude}`
+                    );
+                    await this.getWeatherByCoordinates(position.coords.latitude, position.coords.longitude);
+                    this.toast.showSuccess('✅ Weather loaded for your location');
+                    return;
+                }
+            } catch (geoError) {
+                console.warn('[WeatherApp] Geolocation failed:', geoError.message);
+                // Continue to fallback location
             }
 
-            this.toast.showSuccess('✅ Weather data loaded successfully');
+            // Attempt 2: Fallback to Tehran (most reliable default)
+            console.log('[WeatherApp] Using Tehran as fallback location');
+            await this.getWeatherByCoordinates(35.6892, 51.389);
+            this.toast.showInfo('🌤️ Weather loaded for Tehran (geolocation unavailable)');
         } catch (error) {
             console.error('[WeatherApp] Critical initialization error:', error);
 
-            // ✅ CRITICAL FIX: Never stay stuck in loading state
+            // NEVER leave app stuck in loading state
             this._setLoading(false);
 
-            // Show user-friendly error with action button
+            // Show actionable error with fallback option
             this.renderer.showError(`
-            Failed to load weather data.<br>
-            <button class="btn btn-primary retry-btn" style="margin-top: 10px;">
-                Retry with Simulated Data
-            </button>
+            <div style="text-align: center; padding: 20px;">
+                <h3 style="margin: 0 0 10px 0;">⚠️ Weather Service Unavailable</h3>
+                <p style="margin: 0 0 15px 0; color: var(--color-text-secondary);">
+                    Could not connect to weather API. This may be due to:
+                </p>
+                <ul style="text-align: left; margin: 0 0 20px 20px; color: var(--color-text-secondary);">
+                    <li>Missing API key in Vercel environment variables</li>
+                    <li>Network connectivity issues</li>
+                    <li>OpenWeatherMap service downtime</li>
+                </ul>
+                <button class="btn btn-primary" id="retry-with-tehran" style="width: 100%; max-width: 300px;">
+                    Load Tehran Weather (Simulated)
+                </button>
+                <p style="margin-top: 15px; font-size: 0.85rem; color: var(--color-text-muted);">
+                    For production deployment:<br>
+                    Set WEATHER_API_KEY in Vercel Dashboard → Settings → Environment Variables
+                </p>
+            </div>
         `);
 
             // Add retry handler
-            const retryBtn = document.querySelector('.retry-btn');
+            const retryBtn = document.getElementById('retry-with-tehran');
             if (retryBtn) {
                 retryBtn.addEventListener('click', () => {
-                    this.getWeatherByCoordinates(35.6892, 51.389); // Tehran fallback
+                    this._setLoading(true);
+                    this.getWeatherByCoordinates(35.6892, 51.389).finally(() => this._setLoading(false));
                 });
+            }
+
+            return; // Prevent finally block from hiding spinner prematurely
+        } finally {
+            // ALWAYS hide loading spinner (critical for UX)
+            if (!this.state.isLoading) {
+                this._setLoading(false);
             }
         }
     }
