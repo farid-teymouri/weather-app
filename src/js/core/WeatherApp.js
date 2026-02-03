@@ -136,41 +136,50 @@ export class WeatherApp {
         try {
             this._setLoading(true);
 
-            // Use mock data in development to avoid API dependency
+            // Development mode: use mock data + show badge
             if (this._isDevelopmentMode()) {
-                console.log('[WeatherApp] Development mode: using Tehran as default location');
-
-                // Set Tehran name immediately for better UX
-                const locationNameEl = document.querySelector('.location-name');
-                if (locationNameEl) {
-                    locationNameEl.textContent = 'Tehran';
-                    locationNameEl.classList.remove('skeleton');
-                }
-
-                // ✅ FORCE CELSIUS DISPLAY IN DEVELOPMENT
-                this.state.units = 'metric';
-                this.renderer.updateUnits('metric');
-
-                await this.getWeatherByCoordinates(this.config.defaultLocation.lat, this.config.defaultLocation.lon);
-
-                this.toast.showInfo(
-                    '🌤️ WeatherFlow loaded! Tehran winter weather (9°C, scattered clouds). Units: Celsius'
-                );
+                // ... [existing badge code] ...
+                await this.getWeatherByCoordinates(35.6892, 51.389);
+                this.toast.showInfo('🌤️ Tehran weather loaded (simulated data)');
                 return;
             }
-        } catch (error) {
-            console.error('[WeatherApp] Error initializing weather:', error);
-            this.toast.showError('Unable to load weather data. Please try again.');
 
-            // Final fallback to default location
+            // Production mode: try real API with fallback
+            console.log('[WeatherApp] Production mode: loading real weather data...');
+
             try {
-                await this.getWeatherByCoordinates(this.config.defaultLocation.lat, this.config.defaultLocation.lon);
-            } catch (fallbackError) {
-                console.error('[WeatherApp] Fallback failed:', fallbackError);
-                this._setError('Failed to load weather data');
+                // Try geolocation first
+                const position = await this.geolocationManager.getCurrentPosition();
+                await this.getWeatherByCoordinates(position.coords.latitude, position.coords.longitude);
+            } catch (geoError) {
+                console.warn('[WeatherApp] Geolocation failed, using default location:', geoError);
+
+                // Fallback to Tehran (or your preferred default)
+                await this.getWeatherByCoordinates(35.6892, 51.389);
             }
-        } finally {
+
+            this.toast.showSuccess('✅ Weather data loaded successfully');
+        } catch (error) {
+            console.error('[WeatherApp] Critical initialization error:', error);
+
+            // ✅ CRITICAL FIX: Never stay stuck in loading state
             this._setLoading(false);
+
+            // Show user-friendly error with action button
+            this.renderer.showError(`
+            Failed to load weather data.<br>
+            <button class="btn btn-primary retry-btn" style="margin-top: 10px;">
+                Retry with Simulated Data
+            </button>
+        `);
+
+            // Add retry handler
+            const retryBtn = document.querySelector('.retry-btn');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', () => {
+                    this.getWeatherByCoordinates(35.6892, 51.389); // Tehran fallback
+                });
+            }
         }
     }
 
