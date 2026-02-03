@@ -6,7 +6,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "vite build",
+        "build": "vite build && node scripts/fix-html-paths.js",
         "preview": "vite preview",
         "format": "prettier --write \"src/**/*.{js,css}\" \"public/**/*.html\"",
         "format:check": "prettier --check \"**/*.{js,css,html,json,md}\"",

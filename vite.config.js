@@ -1,37 +1,37 @@
+// vite.config.js
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
-    root: '.',
-    base: '/', // ✅ Essential for Vercel routing
-    publicDir: 'public',
+    base: '/',
+    publicDir: 'public', // Static assets copied from here
 
     build: {
-        outDir: 'dist', // ✅ Must match vercel.json
+        outDir: 'dist',
         assetsDir: 'assets',
+        // ✅ CRITICAL: MUST point to public/index.html
         rollupOptions: {
             input: {
-                main: resolve(__dirname, 'public/index.html'),
+                main: resolve(__dirname, 'public/index.html'), // Process this file
+            },
+            output: {
+                entryFileNames: 'assets/[name].[hash].js',
+                chunkFileNames: 'assets/[name].[hash].js',
+                assetFileNames: (assetInfo) => {
+                    if (assetInfo.name?.endsWith('.css')) {
+                        return 'assets/[name].[hash].css';
+                    }
+                    return 'assets/[name].[hash].[ext]';
+                },
             },
         },
         minify: 'terser',
         terserOptions: {
-            compress: {
-                drop_console: true, // ✅ Remove console in production
-                drop_debugger: true,
-            },
+            compress: { drop_console: true, drop_debugger: true },
         },
-        sourcemap: false, // ✅ No source maps in production
-        reportCompressedSize: true,
+        sourcemap: false,
     },
 
-    server: {
-        port: 5173,
-        open: false, // ✅ Don't auto-open in Vercel build
-        strictPort: true,
-    },
-
-    // ✅ Critical: Resolve aliases for production
     resolve: {
         alias: {
             '@': resolve(__dirname, './src'),
