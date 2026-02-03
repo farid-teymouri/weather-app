@@ -21,7 +21,7 @@ export class WeatherService {
      * Create a WeatherService instance
      * @param {string} apiBase - Base URL for weather API proxy endpoint
      */
-    constructor(apiBase = '/.netlify/functions/weather') {
+    constructor(apiBase = '/api/weather') {
         this.apiBase = apiBase;
         this.cache = new Map();
         this.lastRequestTime = 0;
