@@ -98,7 +98,51 @@ export class WeatherService {
             throw this._handleError(error);
         }
     }
+    /**
+     * Handle and format errors for user display
+     * @private
+     * @param {Error} error - Original error object
+     * @returns {Error} Formatted error with user-friendly message
+     */
+    _handleError(error) {
+        // Don't expose sensitive API information
+        if (error.message.includes('API Error') || error.message.includes('401')) {
+            return new Error('Weather service unavailable. Please check your API configuration.');
+        }
 
+        if (error.message.includes('timeout')) {
+            return new Error('Request timeout. Please check your internet connection.');
+        }
+
+        if (error.message.includes('Failed to fetch')) {
+            return new Error('Cannot connect to weather service. Is the API endpoint configured correctly?');
+        }
+
+        return error;
+    }
+    /**
+     * Implement request throttling to prevent API abuse
+     * @private
+     * @param {number} cooldown - Cooldown period in milliseconds
+     * @returns {Promise<void>}
+     */
+    _throttleRequest(cooldown = this.REQUEST_COOLDOWN) {
+        return new Promise((resolve) => {
+            const now = Date.now();
+            const timeSinceLastRequest = now - this.lastRequestTime;
+
+            if (timeSinceLastRequest >= cooldown) {
+                this.lastRequestTime = now;
+                resolve();
+            } else {
+                const waitTime = cooldown - timeSinceLastRequest;
+                setTimeout(() => {
+                    this.lastRequestTime = Date.now();
+                    resolve();
+                }, waitTime);
+            }
+        });
+    }
     /**
      * Get weather forecast for specific coordinates
      * Automatically uses mock data in development mode
