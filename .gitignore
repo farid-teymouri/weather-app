@@ -1,0 +1,62 @@
+# Dependencies
+node_modules/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build outputs
+dist/
+build/
+*.min.js
+*.bundle.js
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*~
+*.bak
+*.swp
+
+# IDE specific
+.vscode/
+.idea/
+.settings/
+.project
+
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+.venv/
+.env/
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+.coverage
+coverage.xml
