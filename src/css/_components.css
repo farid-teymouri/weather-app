@@ -707,3 +707,18 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+/* Search result keyboard navigation highlight */
+.search-result-item.highlighted {
+    background-color: var(--color-primary);
+    color: white;
+    outline: none;
+}
+
+.search-result-item.highlighted .result-subtitle {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* Smooth scroll behavior for autocomplete */
+.search-autocomplete {
+    scroll-behavior: smooth;
+}

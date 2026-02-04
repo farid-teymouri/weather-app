@@ -180,15 +180,42 @@ export class SearchManager {
         });
 
         // Add to container
-        this.autocompleteContainer.appendChild(resultsList);
-        this.autocompleteContainer.style.display = 'block';
+        // this.autocompleteContainer.appendChild(resultsList);
+        // this.autocompleteContainer.style.display = 'block';
 
         // Add keyboard navigation
-        this._setupKeyboardNav(results);
+        // this._setupKeyboardNav(results);
+        // ✅ FIXED: Clear container, append results, then get DOM nodes for keyboard nav
+        if (this.autocompleteContainer) {
+            this.autocompleteContainer.innerHTML = ''; // Clear previous results FIRST
+            this.autocompleteContainer.appendChild(resultsList);
+            this.autocompleteContainer.style.display = 'block';
 
+            // ✅ CRITICAL: Get ACTUAL DOM elements (buttons) - NOT data array
+            const resultItems = this.autocompleteContainer.querySelectorAll('.search-result-item');
+
+            // ✅ Cleanup previous listeners to prevent memory leaks
+            if (this._cleanupKeyboardNav) {
+                this._cleanupKeyboardNav();
+            }
+
+            // ✅ Pass DOM nodes to keyboard navigation setup
+            if (resultItems.length > 0 && this._setupKeyboardNav) {
+                this._setupKeyboardNav(resultItems);
+            }
+
+            console.log(`[SearchManager] Showing ${resultItems.length} autocomplete results`);
+        } else {
+            console.error('[SearchManager] Autocomplete container not found!');
+        }
         console.log(`[SearchManager] Showing ${results.length} autocomplete results`);
     }
 
+    /**
+     * Escape HTML to prevent XSS in search results
+     * @param {string} str - Input string
+     * @returns {string} Sanitized string
+     */
     _escapeHtml(str) {
         if (typeof str !== 'string') return '';
         return str
@@ -414,6 +441,115 @@ export class SearchManager {
 
         if (this.autocompleteContainer && this.autocompleteContainer.parentNode) {
             this.autocompleteContainer.parentNode.removeChild(this.autocompleteContainer);
+        }
+    } /**
+     * Escape HTML special characters to prevent XSS
+     * @private
+     * @param {string} str - String to escape
+     * @returns {string} Escaped string
+     */
+    _escapeHtml(str) {
+        if (typeof str !== 'string') return '';
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    /**
+     * Setup keyboard navigation for autocomplete results
+     * @param {NodeList} items - DOM elements of search results
+     */
+    _setupKeyboardNav(items) {
+        if (!items || items.length === 0) return;
+
+        let currentIndex = -1;
+        const self = this;
+
+        // Handle keydown events
+        const handleKeydown = (e) => {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                currentIndex = (currentIndex + 1) % items.length;
+                self._highlightItem(items, currentIndex);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                currentIndex = (currentIndex - 1 + items.length) % items.length;
+                self._highlightItem(items, currentIndex);
+            } else if (e.key === 'Enter' && currentIndex >= 0) {
+                e.preventDefault();
+                items[currentIndex].click();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                self._hideAutocomplete();
+                if (self.searchInput) self.searchInput.blur();
+            }
+        };
+
+        // Add listeners
+        if (this.searchInput) {
+            this.searchInput.addEventListener('keydown', handleKeydown);
+        }
+
+        // Cleanup function
+        const cleanup = () => {
+            if (this.searchInput) {
+                this.searchInput.removeEventListener('keydown', handleKeydown);
+            }
+            document.removeEventListener('click', handleClickOutside);
+        };
+
+        // Close on outside click
+        const handleClickOutside = (e) => {
+            const target = e.target;
+            if (
+                this.autocompleteContainer &&
+                !this.autocompleteContainer.contains(target) &&
+                this.searchInput &&
+                !this.searchInput.contains(target)
+            ) {
+                cleanup();
+                this._hideAutocomplete();
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+
+        // Highlight first item
+        currentIndex = 0;
+        this._highlightItem(items, currentIndex);
+
+        // Store cleanup reference
+        this._keyboardCleanup = cleanup;
+    }
+
+    /**
+     * Highlight selected item in autocomplete list
+     * @param {NodeList} items - Result items
+     * @param {number} index - Index to highlight
+     */
+    _highlightItem(items, index) {
+        items.forEach((item, i) => {
+            if (i === index) {
+                item.setAttribute('aria-selected', 'true');
+                item.classList.add('highlighted');
+                item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            } else {
+                item.setAttribute('aria-selected', 'false');
+                item.classList.remove('highlighted');
+            }
+        });
+    }
+
+    /**
+     * Cleanup keyboard navigation listeners
+     */
+    _cleanupKeyboardNav() {
+        if (this._keyboardCleanup) {
+            this._keyboardCleanup();
+            this._keyboardCleanup = null;
         }
     }
 }
