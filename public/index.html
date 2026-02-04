@@ -130,7 +130,7 @@
                             </svg>
                         </button>
 
-                        <!-- Search Input -->
+                        <!-- Search Input (in header) -->
                         <div class="search-container">
                             <label for="location-search" class="sr-only">Search for a location</label>
                             <input
@@ -141,6 +141,12 @@
                                 aria-label="Search for a location"
                                 autocomplete="off"
                             />
+                            <div
+                                id="search-autocomplete"
+                                class="search-autocomplete"
+                                role="region"
+                                aria-live="polite"
+                            ></div>
                             <button
                                 id="search-clear"
                                 class="btn btn-icon search-clear-btn"

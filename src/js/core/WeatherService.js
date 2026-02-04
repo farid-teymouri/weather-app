@@ -696,7 +696,8 @@ ${window.location.origin}/api/weather?lat=35.6892&lon=51.3890&units=metric&type=
             limit: '5', // Limit results for performance
         });
 
-        return `${this.apiBase}/search?${params.toString()}`;
+        // ✅ CRITICAL FIX: Point to dedicated /api/search endpoint (NOT /api/weather/search)
+        return `/api/search?${params.toString()}`;
     }
 
     /**

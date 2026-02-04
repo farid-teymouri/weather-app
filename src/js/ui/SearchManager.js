@@ -123,36 +123,81 @@ export class SearchManager {
             this.searchInput.classList.remove('search-loading');
         }
     }
-    /**
-     * Show autocomplete dropdown
-     * @private
-     * @param {Array} results - Search results
-     */
+    // In SearchManager class, update _showAutocomplete method
     _showAutocomplete(results) {
-        if (!this.autocompleteContainer) return;
+        if (!this.autocompleteContainer) {
+            console.warn('[SearchManager] Autocomplete container not found');
+            return;
+        }
 
-        // Clear previous results
+        // Clear existing results
         this.autocompleteContainer.innerHTML = '';
 
-        if (results.length === 0) {
+        // Hide if no results or empty query
+        if (!results || results.length === 0) {
             this._hideAutocomplete();
             return;
         }
 
-        // Limit results
-        const limitedResults = results.slice(0, this.MAX_RESULTS);
+        // Create results list
+        const resultsList = document.createElement('div');
+        resultsList.className = 'search-results';
+        resultsList.setAttribute('role', 'listbox');
+        resultsList.setAttribute('aria-label', 'Search results');
 
-        // Create result items
-        limitedResults.forEach((result, index) => {
-            const item = this._createAutocompleteItem(result, index);
-            this.autocompleteContainer.appendChild(item);
+        // Add results
+        results.forEach((result, index) => {
+            const item = document.createElement('button');
+            item.className = 'search-result-item';
+            item.setAttribute('role', 'option');
+            item.setAttribute('aria-selected', 'false');
+            item.setAttribute('data-index', index);
+
+            // Build location text (handle missing state)
+            const locationText = result.state
+                ? `${result.name}, ${result.state}, ${result.country}`
+                : `${result.name}, ${result.country}`;
+
+            item.innerHTML = `
+            <div class="result-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </div>
+            <div class="result-text">
+                <div class="result-name">${this._escapeHtml(result.name)}</div>
+                <div class="result-subtitle">${this._escapeHtml(locationText)}</div>
+            </div>
+        `;
+
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                this._selectResult(result);
+            });
+
+            resultsList.appendChild(item);
         });
 
-        // Show container
+        // Add to container
+        this.autocompleteContainer.appendChild(resultsList);
         this.autocompleteContainer.style.display = 'block';
-        this.autocompleteContainer.setAttribute('aria-expanded', 'true');
+
+        // Add keyboard navigation
+        this._setupKeyboardNav(results);
+
+        console.log(`[SearchManager] Showing ${results.length} autocomplete results`);
     }
 
+    _escapeHtml(str) {
+        if (typeof str !== 'string') return '';
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
     /**
      * Create autocomplete item element
      * @private
