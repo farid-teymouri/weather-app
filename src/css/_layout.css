@@ -48,10 +48,9 @@
 
 /* Search Container */
 .search-container {
-    position: relative; /* ✅ REQUIRED for absolute autocomplete positioning */
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
+    position: relative;
+    display: flex;
+    align-items: center;
 }
 /* Autocomplete dropdown container */
 .search-autocomplete {

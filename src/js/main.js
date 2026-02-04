@@ -76,8 +76,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Expose app instance to window for debugging purposes (development only)
         if (APP_CONFIG.debug) {
-            window.app = window.weatherApp;
-            console.log('[Main] App instance exposed to window.app for debugging');
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('[Main] DOM fully loaded - initializing WeatherApp');
+                window.app = new WeatherApp(APP_CONFIG);
+                console.log('[Main] App instance exposed to window.app');
+            });
         }
     } catch (error) {
         console.error('[Main] Failed to initialize application:', error);

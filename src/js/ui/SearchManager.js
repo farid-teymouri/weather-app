@@ -132,34 +132,49 @@ export class SearchManager {
     }
     // In SearchManager class, update _showAutocomplete method
     _showAutocomplete(results) {
-        // ✅ CRITICAL DEBUG LOGS
-        console.log('[SearchManager] Rendering autocomplete with', results?.length || 0, 'results');
+        // ✅ DYNAMIC CONTAINER QUERY (avoids timing issues)
+        const container = document.getElementById('search-autocomplete');
+        if (!container) {
+            console.error('[SearchManager] ❌ FATAL: #search-autocomplete NOT FOUND in DOM!');
+            console.error('[SearchManager] Possible causes:');
+            console.error('  1. HTML missing id="search-autocomplete"');
+            console.error('  2. Script executing before DOM ready (Vercel optimization)');
+            console.error('  3. Build process altered HTML structure');
 
-        if (!this.autocompleteContainer) {
-            console.error('[SearchManager] ❌ FATAL: #search-autocomplete container NOT FOUND in DOM!');
-            console.error(
-                '[SearchManager] Check: 1) HTML has id="search-autocomplete" 2) SearchManager initialized after DOM ready'
-            );
+            // ✅ EMERGENCY FALLBACK: Create container dynamically
+            const searchInput = document.getElementById('location-search');
+            if (searchInput?.parentElement) {
+                console.warn('[SearchManager] 🚑 Creating missing #search-autocomplete container...');
+                const newContainer = document.createElement('div');
+                newContainer.id = 'search-autocomplete';
+                newContainer.className = 'search-autocomplete';
+                newContainer.setAttribute('role', 'region');
+                newContainer.setAttribute('aria-live', 'polite');
+                searchInput.parentElement.appendChild(newContainer);
+                // Retry with new container
+                this._showAutocomplete(results);
+                return;
+            }
             return;
         }
 
         // Clear previous results
-        this.autocompleteContainer.innerHTML = '';
+        container.innerHTML = '';
 
         // Hide if no valid results
         if (!results || !Array.isArray(results) || results.length === 0) {
-            console.log('[SearchManager] No results to display, hiding autocomplete');
+            console.log('[SearchManager] No results, hiding autocomplete');
             this._hideAutocomplete();
             return;
         }
 
-        // Create results container
+        // Create results list
         const resultsList = document.createElement('div');
         resultsList.className = 'search-results';
         resultsList.setAttribute('role', 'listbox');
         resultsList.setAttribute('aria-label', `Search results (${results.length} locations)`);
 
-        // Render each result
+        // Render results
         results.forEach((result, index) => {
             const item = document.createElement('button');
             item.className = 'search-result-item';
@@ -168,7 +183,6 @@ export class SearchManager {
             item.setAttribute('data-index', index);
             item.setAttribute('type', 'button');
 
-            // Build location text
             const locationText = result.state
                 ? `${result.name}, ${result.state}, ${result.country}`
                 : `${result.name}, ${result.country}`;
@@ -189,37 +203,34 @@ export class SearchManager {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('[SearchManager] Result clicked:', result.name);
+                console.log('[SearchManager] Selected:', result.name);
                 this._selectResult(result);
             });
 
             resultsList.appendChild(item);
         });
 
-        // ✅ CRITICAL: Append to container BEFORE showing
-        this.autocompleteContainer.appendChild(resultsList);
+        // ✅ APPEND TO DYNAMICALLY-QUERIED CONTAINER
+        container.innerHTML = ''; // Double-clear for safety
+        container.appendChild(resultsList);
 
-        // ✅ FORCE VISIBLE WITH ROBUST STYLES
-        this.autocompleteContainer.style.display = 'block';
-        this.autocompleteContainer.style.opacity = '1';
-        this.autocompleteContainer.style.visibility = 'visible';
-        this.autocompleteContainer.classList.add('show'); // Trigger CSS animation
+        // ✅ FORCE VISIBLE WITH MULTIPLE TECHNIQUES
+        container.style.display = 'block';
+        container.style.opacity = '1';
+        container.style.visibility = 'visible';
+        container.classList.add('show');
 
-        console.log('[SearchManager] ✅ Autocomplete VISIBLE. Container styles:', {
-            display: this.autocompleteContainer.style.display,
-            opacity: this.autocompleteContainer.style.opacity,
-            classList: this.autocompleteContainer.className,
+        console.log(`[SearchManager] ✅ SHOWING ${results.length} results. Container:`, {
+            id: container.id,
+            display: window.getComputedStyle(container).display,
+            children: container.children.length,
         });
 
-        // Setup keyboard navigation
-        const resultItems = this.autocompleteContainer.querySelectorAll('.search-result-item');
-        console.log('[SearchManager] Found', resultItems.length, 'result items in DOM');
-
-        if (resultItems.length > 0) {
+        // Setup keyboard nav
+        const items = container.querySelectorAll('.search-result-item');
+        if (items.length > 0) {
             this._cleanupKeyboardNav();
-            this._setupKeyboardNav(resultItems);
-        } else {
-            console.warn('[SearchManager] ⚠️ No .search-result-item elements found after rendering!');
+            this._setupKeyboardNav(items);
         }
     }
 
@@ -297,11 +308,14 @@ export class SearchManager {
      * @private
      */
     _hideAutocomplete() {
-        if (this.autocompleteContainer) {
-            this.autocompleteContainer.style.display = 'none';
-            this.autocompleteContainer.classList.remove('show');
+        const container = document.getElementById('search-autocomplete');
+        if (container) {
+            container.style.display = 'none';
+            container.classList.remove('show');
             this._cleanupKeyboardNav();
             console.log('[SearchManager] Autocomplete hidden');
+        } else {
+            console.warn('[SearchManager] Could not hide: container not found');
         }
     }
 
@@ -516,10 +530,12 @@ export class SearchManager {
 
         // Close on outside click
         const handleClickOutside = (e) => {
+            const currentContainer = document.getElementById('search-autocomplete');
             const target = e.target;
+
             if (
-                this.autocompleteContainer &&
-                !this.autocompleteContainer.contains(target) &&
+                currentContainer &&
+                !currentContainer.contains(target) &&
                 this.searchInput &&
                 !this.searchInput.contains(target)
             ) {
@@ -527,7 +543,6 @@ export class SearchManager {
                 this._hideAutocomplete();
             }
         };
-
         document.addEventListener('click', handleClickOutside);
 
         // Highlight first item

@@ -638,12 +638,6 @@
     font-size: 2rem;
 }
 /* ===== SEARCH CONTAINER (CRITICAL FOR POSITIONING) ===== */
-.search-container {
-    position: relative; /* ✅ REQUIRED for absolute autocomplete positioning */
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
-}
 
 /* Autocomplete dropdown container */
 .search-autocomplete {
