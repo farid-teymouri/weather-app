@@ -122,6 +122,28 @@ export class WeatherApp {
             console.log('[WeatherApp] Search result selected:', event.detail);
             this.getWeatherByLocation(event.detail);
         });
+
+        document.addEventListener(
+            'click',
+            (e) => {
+                if (e.target.matches('.btn-retry-tehran, .btn-retry-tehran *')) {
+                    e.preventDefault();
+                    const btn = e.target.closest('.btn-retry-tehran');
+                    if (btn && !btn.disabled) {
+                        btn.disabled = true; // Prevent double-click
+                        btn.textContent = 'Loading...';
+                        this._setLoading(true);
+
+                        this.getWeatherByCoordinates(35.6892, 51.389).finally(() => {
+                            this._setLoading(false);
+                            btn.disabled = false;
+                            btn.textContent = '🌤️ Load Tehran Weather (Simulated)';
+                        });
+                    }
+                }
+            },
+            true
+        ); // Use capture phase for reliability
         // Window events
         window.addEventListener('online', () => this._handleOnline());
         window.addEventListener('offline', () => this._handleOffline());
@@ -208,38 +230,100 @@ export class WeatherApp {
             // NEVER leave app stuck in loading state
             this._setLoading(false);
 
-            // Show actionable error with fallback option
-            this.renderer.showError(`
-            <div style="text-align: center; padding: 20px;">
-                <h3 style="margin: 0 0 10px 0;">⚠️ Weather Service Unavailable</h3>
-                <p style="margin: 0 0 15px 0; color: var(--color-text-secondary);">
-                    Could not connect to weather API. This may be due to:
+            // ✅ CRITICAL FIX: Create error container SAFELY without HTML injection
+            const errorContainer = document.createElement('div');
+            errorContainer.className = 'error-container';
+            errorContainer.setAttribute('role', 'alert');
+            errorContainer.innerHTML = `
+        <div style="text-align: center; padding: 24px; max-width: 500px; margin: 0 auto;">
+            <svg width="64" height="64" viewBox="0 0 24 24" style="margin: 0 auto 16px; color: var(--color-error);">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+                <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" stroke-width="2"/>
+                <circle cx="12" cy="16" r="1" fill="currentColor"/>
+            </svg>
+            <h3 style="margin: 0 0 12px 0; font-size: 1.3rem; font-weight: 600;">⚠️ Weather Service Unavailable</h3>
+            <p style="margin: 0 0 16px 0; color: var(--color-text-secondary); line-height: 1.5;">
+                Could not connect to weather API. Common causes:
+            </p>
+            <ul style="text-align: left; margin: 0 0 24px 24px; color: var(--color-text-secondary); line-height: 1.6;">
+                <li>Missing API key in Vercel environment variables</li>
+                <li>Network connectivity issues</li>
+                <li>OpenWeatherMap service downtime</li>
+                <li>Edge Function not deployed correctly</li>
+            </ul>
+            <button class="btn btn-primary btn-retry-tehran" type="button" 
+                style="width: 100%; max-width: 320px; padding: 12px 24px; font-size: 1.05rem; margin-bottom: 16px;">
+                🌤️ Load Tehran Weather (Simulated)
+            </button>
+            <div style="background: rgba(74, 85, 104, 0.1); border-radius: 8px; padding: 16px; margin-top: 16px;">
+                <p style="margin: 0 0 8px 0; font-weight: 500; color: var(--color-text);">
+                    🔧 For Production Deployment:
                 </p>
-                <ul style="text-align: left; margin: 0 0 20px 20px; color: var(--color-text-secondary);">
-                    <li>Missing API key in Vercel environment variables</li>
-                    <li>Network connectivity issues</li>
-                    <li>OpenWeatherMap service downtime</li>
-                </ul>
-                <button class="btn btn-primary" id="retry-with-tehran" style="width: 100%; max-width: 300px;">
-                    Load Tehran Weather (Simulated)
-                </button>
-                <p style="margin-top: 15px; font-size: 0.85rem; color: var(--color-text-muted);">
-                    For production deployment:<br>
-                    Set WEATHER_API_KEY in Vercel Dashboard → Settings → Environment Variables
-                </p>
+                <ol style="margin: 0; padding-left: 20px; text-align: left; font-size: 0.9rem; color: var(--color-text-secondary);">
+                    <li>Set <code>WEATHER_API_KEY</code> in Vercel Dashboard</li>
+                    <li>Verify <code>api/weather.js</code> exists at ROOT level</li>
+                    <li>Redeploy project after configuration changes</li>
+                </ol>
             </div>
-        `);
+            <p style="margin-top: 20px; font-size: 0.85rem; color: var(--color-text-muted);">
+                Request ID: <span class="request-id">${Date.now()}</span>
+            </p>
+        </div>
+    `;
 
-            // Add retry handler
-            const retryBtn = document.getElementById('retry-with-tehran');
-            if (retryBtn) {
-                retryBtn.addEventListener('click', () => {
-                    this._setLoading(true);
-                    this.getWeatherByCoordinates(35.6892, 51.389).finally(() => this._setLoading(false));
-                });
+            // ✅ CRITICAL: Replace weather card content SAFELY
+            const weatherCard = document.querySelector('#current-weather .weather-card');
+            if (weatherCard) {
+                weatherCard.innerHTML = ''; // Clear existing content
+                weatherCard.appendChild(errorContainer);
+
+                // ✅ CRITICAL FIX: Attach event listener AFTER DOM insertion with DELEGATION
+                const retryBtn = errorContainer.querySelector('.btn-retry-tehran');
+                if (retryBtn) {
+                    // Use once: true to prevent duplicate handlers
+                    retryBtn.addEventListener(
+                        'click',
+                        async () => {
+                            console.log('[WeatherApp] User clicked retry button - loading Tehran mock data');
+                            this._setLoading(true);
+
+                            try {
+                                // Force development mode behavior for this retry
+                                await this.getWeatherByCoordinates(35.6892, 51.389);
+                                this.toast.showSuccess('✅ Tehran weather loaded successfully (simulated data)');
+                            } catch (retryError) {
+                                console.error('[WeatherApp] Retry failed:', retryError);
+                                this.toast.showError('Failed to load weather. Check console for details.');
+                            } finally {
+                                this._setLoading(false);
+                            }
+                        },
+                        { once: true }
+                    ); // Prevent duplicate handlers
+
+                    console.log('[WeatherApp] ✅ Retry button event listener attached successfully');
+                } else {
+                    console.error('[WeatherApp] ❌ Retry button NOT FOUND in DOM after insertion');
+                    this.toast.showError('Error UI loaded but retry button missing. Check console.');
+                }
+            } else {
+                console.error('[WeatherApp] ❌ Weather card container not found');
+                this.toast.showError('Critical UI error. Please refresh the page.');
             }
 
-            return; // Prevent finally block from hiding spinner prematurely
+            // Log actionable diagnostics
+            console.group('🔍 WEATHER SERVICE DEBUG INFO');
+            console.log('Error:', error.message);
+            console.log('API Base:', this.weatherService.apiBase);
+            console.log('Is Dev Mode:', this._isDevelopmentMode());
+            console.log(
+                'Test Edge Function URL:',
+                `${window.location.origin}/api/weather?lat=35.6892&lon=51.3890&units=metric&type=current`
+            );
+            console.log('💡 ACTION: Open URL above directly in browser to test Edge Function');
+            console.groupEnd();
+
+            // No return - allow finally block to execute (redundant but safe)
         } finally {
             // ALWAYS hide loading spinner (critical for UX)
             if (!this.state.isLoading) {
