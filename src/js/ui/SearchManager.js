@@ -28,25 +28,31 @@ export class SearchManager {
             return;
         }
 
-        // Create autocomplete container
-        this._createAutocompleteContainer();
+        // DO NOT create autocomplete container dynamically
+        // Use the static container defined in HTML
+        this.autocompleteContainer = document.getElementById('search-autocomplete');
+        if (!this.autocompleteContainer) {
+            console.error('[SearchManager] CRITICAL: #search-autocomplete container not found in HTML!');
+            return;
+        }
 
         // Setup event listeners
         this._setupEventListeners();
     }
 
     /**
-     * Create autocomplete dropdown container
+     * Handle focus event
      * @private
      */
-    _createAutocompleteContainer() {
-        this.autocompleteContainer = document.createElement('div');
-        this.autocompleteContainer.className = 'autocomplete-container';
-        this.autocompleteContainer.setAttribute('role', 'listbox');
-        this.autocompleteContainer.setAttribute('aria-label', 'Search suggestions');
-        this.autocompleteContainer.style.display = 'none';
-
-        this.searchInput.parentNode.appendChild(this.autocompleteContainer);
+    _handleFocus() {
+        // Show autocomplete if there are results
+        if (this.searchInput.value.trim().length > 0) {
+            const container = document.getElementById('search-autocomplete');
+            if (container && container.innerHTML.trim() !== '') {
+                container.style.display = 'block';
+                container.classList.add('show');
+            }
+        }
     }
 
     /**
@@ -283,7 +289,7 @@ export class SearchManager {
     _hideAutocomplete() {
         const container = document.getElementById('search-autocomplete');
         if (container) {
-            container.style.display = 'none !important';
+            container.style.display = 'none';
             container.classList.remove('show');
             this._cleanupKeyboardNav();
         }
@@ -305,8 +311,9 @@ export class SearchManager {
 
         // Enter key - select first result or search
         if (key === 'Enter' && this.searchInput.value.trim().length > 0) {
-            if (this.autocompleteContainer.style.display !== 'none') {
-                const firstItem = this.autocompleteContainer.querySelector('.autocomplete-item');
+            const container = document.getElementById('search-autocomplete');
+            if (container && container.classList.contains('show')) {
+                const firstItem = container.querySelector('.search-result-item');
                 if (firstItem) {
                     firstItem.click();
                 }
@@ -327,11 +334,14 @@ export class SearchManager {
      * @param {boolean} down - True for down, false for up
      */
     _navigateResults(down) {
-        const items = this.autocompleteContainer.querySelectorAll('.autocomplete-item');
+        const container = document.getElementById('search-autocomplete');
+        if (!container) return;
+
+        const items = container.querySelectorAll('.search-result-item');
         if (items.length === 0) return;
 
         // Find currently selected item
-        const selectedItem = this.autocompleteContainer.querySelector('[aria-selected="true"]');
+        const selectedItem = container.querySelector('[aria-selected="true"]');
         let nextIndex = 0;
 
         if (selectedItem) {
@@ -359,8 +369,12 @@ export class SearchManager {
      */
     _handleFocus() {
         // Show autocomplete if there are results
-        if (this.searchInput.value.trim().length > 0 && this.autocompleteContainer.innerHTML) {
-            this.autocompleteContainer.style.display = 'block';
+        if (this.searchInput.value.trim().length > 0) {
+            const container = document.getElementById('search-autocomplete');
+            if (container && container.innerHTML.trim() !== '') {
+                container.style.display = 'block';
+                container.classList.add('show');
+            }
         }
     }
 

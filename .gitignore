@@ -1,14 +1,16 @@
+```
 # Dependencies
 node_modules/
 
 # Logs and temp files
 *.log
 *.tmp
+*.swp
 
 # Environment
 .env
 .env.local
-.env.*
+*.env.*
 
 # Editors
 .vscode/
@@ -20,50 +22,43 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Build directories
+# Build outputs
 dist/
 build/
-target/
+*.min.js
+*.bundle.js
 
-# Compression files
-*.zip
-*.gz
-*.tar
-*.tgz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
+# Coverage
+coverage/
+htmlcov/
+.coverage
 
 # OS generated files
 .DS_Store
 Thumbs.db
 
-# Testing
-coverage/
-htmlcov/
-.coverage
+# Backup files
+*~
+*.bak
+*.swp
 
 # IDE specific
-*.swp
-*.swo
-*.out
+.vscode/
+.idea/
+.settings/
+.project
 
-# Virtual environments
-.venv/
+# Distribution / packaging
+.Python
+env/
 venv/
+ENV/
+.venv/
 .env/
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+```
