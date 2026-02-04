@@ -1,20 +1,31 @@
-// api/weather.js - MINIMAL WORKING VERSION WITH CORS
+// api/weather.js - DEBUG VERSION WITH MAXIMUM LOGGING
 export const config = { runtime: 'edge' };
 
 export default async function handler(request) {
     // ALWAYS set CORS headers first
     const headers = {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*', // Critical for browser requests
+        'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Cache-Control': 'public, max-age=300',
+        'Access-Control-Allow-Headers': 'Content-Type, X-Weather-Debug, X-Request-ID',
+        'Cache-Control': 'public, max-age=60',
+        'X-Edge-Function': 'weather-debug-v1',
     };
 
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
         return new Response(null, { headers, status: 204 });
     }
+
+    // Generate unique request ID for tracking
+    const requestId =
+        request.headers.get('X-Request-ID') || `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+    // Log EVERYTHING to Vercel logs
+    console.log(`[EDGE-${requestId}] === REQUEST START ===`);
+    console.log(`[EDGE-${requestId}] URL:`, request.url);
+    console.log(`[EDGE-${requestId}] Method:`, request.method);
+    console.log(`[EDGE-${requestId}] Headers:`, Object.fromEntries(request.headers.entries()));
 
     try {
         const { searchParams } = new URL(request.url);
@@ -23,27 +34,37 @@ export default async function handler(request) {
         const units = searchParams.get('units') || 'metric';
         const type = searchParams.get('type') || 'current';
 
+        console.log(`[EDGE-${requestId}] Params: lat=${lat}, lon=${lon}, units=${units}, type=${type}`);
+
         if (!lat || !lon) {
-            return new Response(JSON.stringify({ error: 'Missing coordinates' }), {
-                status: 400,
-                headers,
-            });
+            console.error(`[EDGE-${requestId}] ❌ ERROR: Missing coordinates`);
+            return new Response(
+                JSON.stringify({
+                    error: 'Missing coordinates',
+                    requestId,
+                    fix: 'Include lat and lon parameters',
+                }),
+                { status: 400, headers }
+            );
         }
 
-        // Get API key from Vercel environment
+        // Get API key
         const API_KEY = process.env.WEATHER_API_KEY;
         if (!API_KEY) {
-            console.error('❌ WEATHER_API_KEY not set in Vercel environment variables!');
+            console.error(`[EDGE-${requestId}] ❌ CRITICAL: WEATHER_API_KEY NOT SET IN VERCEL ENVIRONMENT!`);
             return new Response(
                 JSON.stringify({
                     error: 'API configuration missing',
+                    requestId,
                     fix: 'Set WEATHER_API_KEY in Vercel Dashboard → Settings → Environment Variables',
+                    debug: 'Check Vercel project settings',
                 }),
                 { status: 500, headers }
             );
         }
+        console.log(`[EDGE-${requestId}] API Key configured (length: ${API_KEY.length})`);
 
-        // Build API URL based on type
+        // Build URL
         const baseUrl =
             type === 'forecast'
                 ? 'https://api.openweathermap.org/data/2.5/forecast'
@@ -54,46 +75,73 @@ export default async function handler(request) {
             lon,
             units,
             appid: API_KEY,
-            ...(type === 'forecast' && { cnt: '40' }), // 5 days of 3-hour data
+            ...(type === 'forecast' && { cnt: '40' }),
         });
+        const apiUrl = `${baseUrl}?${params}`;
 
-        // Fetch from OpenWeatherMap
-        const response = await fetch(`${baseUrl}?${params}`, {
-            headers: { 'User-Agent': 'WeatherApp/1.0' },
+        console.log(`[EDGE-${requestId}] Fetching from OpenWeatherMap: ${baseUrl}?[REDACTED]`);
+
+        // Fetch with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+        const owmResponse = await fetch(apiUrl, {
+            headers: { 'User-Agent': 'WeatherApp/1.0 (Vercel Edge)' },
+            signal: controller.signal,
         });
+        clearTimeout(timeoutId);
 
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ status: response.status }));
-            console.error('OpenWeatherMap API error:', error);
+        console.log(`[EDGE-${requestId}] OpenWeatherMap response status: ${owmResponse.status}`);
 
-            // Return mock data on API failure (prevents app crash)
-            return new Response(JSON.stringify(getMockResponse(type, lat, lon, units)), {
-                status: 200,
-                headers,
-            });
+        if (!owmResponse.ok) {
+            const errorText = await owmResponse.text();
+            console.error(`[EDGE-${requestId}] ❌ OpenWeatherMap API error ${owmResponse.status}:`, errorText);
+
+            // Return helpful error with mock fallback
+            return new Response(
+                JSON.stringify({
+                    error: `OpenWeatherMap API error ${owmResponse.status}`,
+                    requestId,
+                    details: errorText.substring(0, 200),
+                    mock: true,
+                    data: getMockResponse(type, lat, lon, units),
+                }),
+                { status: 200, headers }
+            ); // Return 200 with mock data to prevent app crash
         }
 
-        const data = await response.json();
+        // Process successful response
+        const data = await owmResponse.json();
+        console.log(`[EDGE-${requestId}] ✅ OpenWeatherMap returned data (keys: ${Object.keys(data).join(', ')})`);
 
-        // Transform response to match frontend expectations
-        const result = type === 'forecast' ? { daily: transformForecast(data.list) } : transformCurrent(data);
+        const result =
+            type === 'forecast'
+                ? { daily: transformForecast(data.list), requestId }
+                : { ...transformCurrent(data), requestId };
 
+        console.log(`[EDGE-${requestId}] === REQUEST SUCCESS ===`);
         return new Response(JSON.stringify(result), { status: 200, headers });
     } catch (error) {
-        console.error('Edge Function error:', error);
+        console.error(`[EDGE-${requestId}] ❌ EDGE FUNCTION CRASH:`, error);
 
-        // ALWAYS return mock data on ANY error (prevents app crash)
-        return new Response(JSON.stringify(getMockResponse('current', 35.6892, 51.389, 'metric')), {
-            status: 200,
-            headers,
-        });
+        // ALWAYS return mock data to prevent app crash
+        return new Response(
+            JSON.stringify({
+                ...getMockResponse('current'),
+                mock: true,
+                requestId,
+                error: 'Edge function error',
+                message: error.message,
+            }),
+            { status: 200, headers }
+        );
     }
 }
 
-// ===== HELPER FUNCTIONS (MINIMAL) =====
+// ===== MINIMAL HELPERS (with logging) =====
 function transformCurrent(data) {
     return {
-        name: data.name,
+        name: data.name || 'Unknown',
         sys: { country: data.sys?.country || 'IR' },
         main: data.main,
         weather: data.weather,
@@ -117,26 +165,15 @@ function transformForecast(list) {
                     day: item.main.temp,
                     min: item.main.temp_min,
                     max: item.main.temp_max,
-                    night: item.main.temp,
-                    eve: item.main.temp,
-                    morn: item.main.temp,
                 },
-                feels_like: { day: item.main.feels_like },
-                pressure: item.main.pressure,
-                humidity: item.main.humidity,
-                wind_speed: item.wind.speed,
-                wind_deg: item.wind.deg,
                 weather: item.weather,
-                clouds: item.clouds.all,
-                pop: item.pop || 0,
             };
         }
     });
     return Object.values(days).slice(0, 7);
 }
 
-function getMockResponse(type, lat, lon, units) {
-    // Simplified Tehran mock data
+function getMockResponse(type) {
     return type === 'forecast'
         ? {
               daily: Array(7)
@@ -150,10 +187,8 @@ function getMockResponse(type, lat, lon, units) {
         : {
               name: 'Tehran',
               sys: { country: 'IR' },
-              main: { temp: 9, feels_like: 6, temp_min: 7, temp_max: 11, pressure: 1020, humidity: 45 },
+              main: { temp: 9, feels_like: 6, humidity: 45 },
               weather: [{ main: 'Clouds', description: 'scattered clouds', icon: '03d' }],
-              wind: { speed: 3.2, deg: 315 },
-              clouds: { all: 40 },
               dt: Math.floor(Date.now() / 1000),
               timezone: 12600,
               coord: { lat: 35.6892, lon: 51.389 },

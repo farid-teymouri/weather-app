@@ -341,7 +341,44 @@
                 });
             }
         </script> -->
+        <div
+            style="
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                background: rgba(0, 0, 0, 0.8);
+                color: #4ade80;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-family: monospace;
+                font-size: 14px;
+                z-index: 9999;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+                cursor: pointer;
+            "
+            id="debug-toggle"
+        >
+            🔍 Weather Debug: OFF<br />
+            <small style="color: #9ca3af">(Click to toggle verbose logging)</small>
+        </div>
 
+        <script>
+            document.getElementById('debug-toggle').addEventListener('click', function () {
+                const isEnabled = localStorage.getItem('debugWeather') === 'true';
+                if (isEnabled) {
+                    localStorage.removeItem('debugWeather');
+                    this.innerHTML = '🔍 Weather Debug: OFF<br><small>(Click to toggle verbose logging)</small>';
+                    this.style.color = '#9ca3af';
+                    console.log('🔍 Weather debug mode DISABLED');
+                } else {
+                    localStorage.setItem('debugWeather', 'true');
+                    this.innerHTML = '🔍 Weather Debug: ON<br><small>(Check console for detailed logs)</small>';
+                    this.style.color = '#4ade80';
+                    console.log('🔍 Weather debug mode ENABLED - Refresh page to see logs');
+                    console.log('💡 TIP: Open browser DevTools (F12) → Console tab');
+                }
+            });
+        </script>
         <!-- Main Application Script - Using type="module" for ES6 imports -->
         <script type="module" src="../src/js/main.js"></script>
     </body>

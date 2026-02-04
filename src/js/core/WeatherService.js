@@ -25,9 +25,28 @@ export class WeatherService {
         this.apiBase = apiBase;
         this.cache = new Map();
         this.lastRequestTime = 0;
-        this.REQUEST_COOLDOWN = 1000; // 1 second minimum between requests
-        this.CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+        this.REQUEST_COOLDOWN = 1000;
+        this.CACHE_DURATION = 5 * 60 * 1000;
+
+        // Initialize debug mode from localStorage
+        this.debugMode = localStorage.getItem('debugWeather') === 'true';
+        if (this.debugMode) {
+            console.log('🔍 [WeatherService] DEBUG MODE ENABLED');
+            console.log('🔍 [WeatherService] API Base:', this.apiBase);
+        }
     }
+
+    // ===== DEBUG HELPER =====
+    _logDebug(...args) {
+        if (this.debugMode) {
+            console.log('[WeatherService-DEBUG]', ...args);
+        }
+    }
+
+    _logError(...args) {
+        console.error('[WeatherService-ERROR]', ...args);
+    }
+
     async _fetchWithTimeout(url, options = {}, timeout = 8000) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -47,6 +66,8 @@ export class WeatherService {
             throw error;
         }
     }
+
+    // ===== CORE METHODS WITH DEBUG LOGGING =====
     /**
      * Get current weather for specific coordinates
      * Automatically uses mock data in development mode
@@ -57,65 +78,155 @@ export class WeatherService {
      * @returns {Promise<Object>} Weather data
      */
     async getWeather({ lat, lon, units = 'metric' }) {
+        const requestId = `weather-${Date.now()}`;
+        this._logDebug(`[${requestId}] Starting getWeather request`);
+
         try {
-            // Use mock data in development to avoid API dependency
+            // Development mode check
             if (this._isDevelopmentMode()) {
-                console.log('[WeatherService] Using MOCK data (no API call)');
+                this._logDebug(`[${requestId}] Using MOCK data (development mode)`);
                 return this._getMockWeatherData(lat, lon, units);
             }
 
-            // Validate input parameters
+            // Validation
             this._validateCoordinates(lat, lon);
             this._validateUnits(units);
+            this._logDebug(`[${requestId}] Coordinates validated: ${lat}, ${lon}`);
 
-            // Check cache first
+            // Cache check
             const cacheKey = this._generateCacheKey(lat, lon, units);
             const cachedData = this._getCachedData(cacheKey);
-
             if (cachedData) {
-                console.log('[WeatherService] Returning cached weather data');
+                this._logDebug(`[${requestId}] Returning CACHED data for key: ${cacheKey}`);
                 return cachedData;
             }
+            this._logDebug(`[${requestId}] Cache MISS for key: ${cacheKey}`);
 
-            // Implement request throttling
+            // Build URL
+            const url = this._buildWeatherUrl(lat, lon, units);
+            this._logDebug(`[${requestId}] Built URL: ${url}`);
+            this._logDebug(`[${requestId}] Full URL: ${window.location.origin}${url}`);
+
+            // Throttle request
             await this._throttleRequest();
+            this._logDebug(`[${requestId}] Request throttling passed`);
 
-            // Fetch weather data from API
-            const response = await fetch(this._buildWeatherUrl(lat, lon, units), {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Accept: 'application/json',
-                },
-                credentials: 'same-origin',
-            });
+            // FETCH WITH COMPREHENSIVE DEBUGGING
+            this._logDebug(`[${requestId}] ⏳ Initiating FETCH to Edge Function...`);
 
-            // Handle API errors
-            if (!response.ok) {
-                throw new Error(`API Error: ${response.status} ${response.statusText}`);
+            const startTime = performance.now();
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                this._logError(`[${requestId}] ❌ FETCH TIMEOUT after 10s`);
+                controller.abort();
+            }, 10000);
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        'X-Request-ID': requestId,
+                        'X-Weather-Debug': 'true',
+                    },
+                    credentials: 'same-origin',
+                    signal: controller.signal,
+                });
+
+                clearTimeout(timeoutId);
+                const duration = (performance.now() - startTime).toFixed(2);
+                this._logDebug(`[${requestId}] ✅ FETCH completed in ${duration}ms | Status: ${response.status}`);
+
+                // Log response headers for debugging
+                if (this.debugMode) {
+                    this._logDebug(`[${requestId}] Response Headers:`, Object.fromEntries(response.headers.entries()));
+                }
+
+                // Handle non-OK responses
+                if (!response.ok) {
+                    let errorData;
+                    try {
+                        errorData = await response.json().catch(() => ({}));
+                    } catch (e) {
+                        errorData = { raw: await response.text() };
+                    }
+
+                    this._logError(`[${requestId}] ❌ API returned ${response.status}:`, errorData);
+
+                    // Special handling for 404 (Edge Function not found)
+                    if (response.status === 404) {
+                        this._logError(`[${requestId}] ⚠️ CRITICAL: Edge Function NOT FOUND at ${url}`);
+                        this._logError(`[${requestId}] ⚠️ Check: Is api/weather.js deployed at ROOT level?`);
+                        this._logError(`[${requestId}] ⚠️ Test directly: ${window.location.origin}${url}`);
+                    }
+
+                    throw new Error(`API Error ${response.status}: ${JSON.stringify(errorData)}`);
+                }
+
+                // Parse and sanitize response
+                const data = await response.json();
+                this._logDebug(`[${requestId}] ✅ Parsed JSON response:`, data);
+
+                const sanitizedData = this._sanitizeWeatherData(data);
+                this._cacheData(cacheKey, sanitizedData);
+
+                this._logDebug(`[${requestId}] ✅ Weather data processed and cached`);
+                return sanitizedData;
+            } catch (fetchError) {
+                clearTimeout(timeoutId);
+
+                // Classify error type
+                if (fetchError.name === 'AbortError') {
+                    this._logError(`[${requestId}] ❌ FETCH ABORTED (timeout)`);
+                    throw new Error('Request timeout. Please check your internet connection.');
+                }
+
+                if (fetchError.message.includes('Failed to fetch')) {
+                    this._logError(`[${requestId}] ❌ NETWORK ERROR: Failed to fetch`);
+                    this._logError(`[${requestId}] Possible causes:`);
+                    this._logError(`  1. Edge Function not deployed (404)`);
+                    this._logError(`  2. CORS misconfiguration`);
+                    this._logError(`  3. Network connectivity issue`);
+                    this._logError(`  4. Browser extension blocking request`);
+                    this._logError(`[${requestId}] Test Edge Function directly: ${window.location.origin}${url}`);
+                }
+
+                this._logError(`[${requestId}] ❌ FETCH FAILED:`, fetchError);
+                throw fetchError;
             }
-
-            const data = await response.json();
-
-            // Sanitize response data to prevent XSS
-            const sanitizedData = this._sanitizeWeatherData(data);
-
-            // Cache the data
-            this._cacheData(cacheKey, sanitizedData);
-
-            return sanitizedData;
         } catch (error) {
-            console.error('[WeatherService] Error fetching weather:', error);
+            this._logError(`[${requestId}] ❌ getWeather FAILED:`, error);
 
-            // Fallback to mock data in development if API fails
+            // Fallback to mock data in development
             if (this._isDevelopmentMode()) {
-                console.warn('[WeatherService] API failed, falling back to MOCK data');
+                this._logDebug(`[${requestId}] 🔄 Falling back to MOCK data`);
                 return this._getMockWeatherData(lat, lon, units);
             }
 
-            throw this._handleError(error);
+            // Enhanced error for production
+            if (error.message.includes('Failed to fetch')) {
+                this._logError(`[${requestId}] 💡 TROUBLESHOOTING:`);
+                this._logError(`  1. Open this URL directly in browser:`);
+                this._logError(
+                    `     ${window.location.origin}/api/weather?lat=${lat}&lon=${lon}&units=${units}&type=current`
+                );
+                this._logError(`  2. If 404: Edge Function not deployed correctly`);
+                this._logError(`  3. If CORS error: Check Edge Function headers`);
+                this._logError(`  4. Check Vercel logs for Edge Function errors`);
+            }
+
+            throw this._handleError(error, requestId);
         }
     }
+
+    // ===== OTHER METHODS (condensed for brevity) =====
+    // _validateCoordinates, _validateUnits, _generateCacheKey, _getCachedData,
+    // _cacheData, _sanitizeWeatherData, _sanitizeForecastData, _sanitizeString,
+    // _throttleRequest, _handleError, _isDevelopmentMode, _buildWeatherUrl,
+    // _buildForecastUrl, _getMockWeatherData, _buildWeatherData, _getWeatherIconCode,
+    // _getMockForecastData, searchLocations, _buildSearchUrl, _getMockSearchResults,
+    // _sanitizeSearchQuery, _sanitizeSearchResults
     /**
      * Handle and format errors for user display
      * @private
@@ -123,20 +234,33 @@ export class WeatherService {
      * @returns {Error} Formatted error with user-friendly message
      */
     _handleError(error) {
-        // Don't expose sensitive API information
-        if (error.message.includes('API Error') || error.message.includes('401')) {
-            return new Error('Weather service unavailable. Please check your API configuration.');
-        }
+        this._logError(`[${requestId}] Handling error:`, error.message);
 
+        if (error.message.includes('Failed to fetch')) {
+            return new Error(`Cannot connect to weather service. 
+Debug ID: ${requestId}
+Possible causes:
+1. Edge Function not deployed (check Vercel)
+2. Network connectivity issue
+3. Browser blocking request (check extensions)
+4. CORS misconfiguration
+
+TEST: Open this URL directly:
+${window.location.origin}/api/weather?lat=35.6892&lon=51.3890&units=metric&type=current`);
+        }
         if (error.message.includes('timeout')) {
             return new Error('Request timeout. Please check your internet connection.');
         }
 
-        if (error.message.includes('Failed to fetch')) {
-            return new Error('Cannot connect to weather service. Is the API endpoint configured correctly?');
+        if (error.message.includes('API Error 401')) {
+            return new Error('Invalid API key. Please check Vercel environment variables.');
         }
 
-        return error;
+        if (error.message.includes('API Error 404')) {
+            return new Error('Weather service endpoint not found. Edge Function may not be deployed.');
+        }
+
+        return new Error(`Weather service error: ${error.message}`);
     }
     /**
      * Implement request throttling to prevent API abuse
