@@ -201,7 +201,7 @@ export class SearchManager {
         container.style.display = 'block';
         container.style.opacity = '1';
         container.style.visibility = 'visible';
-        container.classList.add('show');
+        container.classList.add('show', '__web-inspector-hide-shortcut__');
 
         console.log(`[SearchManager] ✅ SHOWING ${results.length} results`);
 

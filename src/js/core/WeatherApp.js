@@ -220,8 +220,27 @@ export class WeatherApp {
                 // Continue to fallback location
             }
 
-            // Attempt 2: Fallback to Tehran (most reliable default)
-            console.log('[WeatherApp] Using Tehran as fallback location');
+            // Attempt 2: Try fallback location using IP geolocation
+            console.log('[WeatherApp] Attempting fallback location via IP geolocation...');
+            try {
+                const fallbackLocation = await this.geolocationManager.getFallbackLocation();
+                if (fallbackLocation && fallbackLocation.lat && fallbackLocation.lon) {
+                    console.log(
+                        `[WeatherApp] Fallback location found: ${fallbackLocation.city || 'Unknown'}, ${fallbackLocation.country}`
+                    );
+                    await this.getWeatherByCoordinates(fallbackLocation.lat, fallbackLocation.lon);
+                    this.toast.showInfo(
+                        `🌤️ Weather loaded for ${fallbackLocation.city || 'your location'} (via IP geolocation)`
+                    );
+                    return;
+                }
+            } catch (fallbackError) {
+                console.warn('[WeatherApp] Fallback location failed:', fallbackError.message);
+            }
+
+            // Attempt 3: Fallback to Tehran (most reliable default)
+            console.log('[WeatherApp] Using Tehran as final fallback location');
+
             await this.getWeatherByCoordinates(35.6892, 51.389);
             this.toast.showInfo('🌤️ Weather loaded for Tehran (geolocation unavailable)');
         } catch (error) {
