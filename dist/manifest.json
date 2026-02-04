@@ -1,0 +1,53 @@
+{
+  "name": "WeatherFlow",
+  "short_name": "WeatherFlow",
+  "description": "Professional weather application with vanilla JavaScript - PWA ready, fully accessible",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4c6fff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["weather", "utilities", "productivity"],
+  "screenshots": [
+    {
+      "src": "/screenshot.svg",
+      "sizes": "1200x630",
+      "type": "image/svg+xml",
+      "platform": "wide"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Current Location",
+      "short_name": "Location",
+      "description": "Get weather for current location",
+      "url": "/?location=current",
+      "icons": [{ "src": "/icons/location.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Search Location",
+      "short_name": "Search",
+      "description": "Search for a location",
+      "url": "/?search=true",
+      "icons": [{ "src": "/icons/search.svg", "sizes": "192x192" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "lang": "en-US",
+  "dir": "ltr"
+}

@@ -197,10 +197,10 @@ export class SearchManager {
         // ✅ APPEND TO STATIC CONTAINER
         container.appendChild(resultsList);
 
-        // ✅ FORCE VISIBLE WITH INLINE STYLES (bypasses CSS issues)
-        container.style.display = 'block !important';
-        container.style.opacity = '1 !important';
-        container.style.visibility = 'visible !important';
+        // Show the container - remove !important to respect CSS
+        container.style.display = 'block';
+        container.style.opacity = '1';
+        container.style.visibility = 'visible';
         container.classList.add('show');
 
         console.log(`[SearchManager] ✅ SHOWING ${results.length} results`);
@@ -290,6 +290,8 @@ export class SearchManager {
         const container = document.getElementById('search-autocomplete');
         if (container) {
             container.style.display = 'none';
+            container.style.opacity = '0';
+            container.style.visibility = 'hidden';
             container.classList.remove('show');
             this._cleanupKeyboardNav();
         }
