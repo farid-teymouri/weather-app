@@ -131,45 +131,11 @@ export class SearchManager {
     }
     // In SearchManager class, update _showAutocomplete method
     _showAutocomplete(results) {
-        // ✅ CRITICAL FIX 1: FORCE PARENT CONTAINER POSITIONING (bypasses CSS issues)
-        const searchInput = document.getElementById('location-search');
-        if (searchInput?.parentElement) {
-            searchInput.parentElement.style.position = 'relative !important';
-            searchInput.parentElement.style.zIndex = '100';
-        }
-
-        // ✅ CRITICAL FIX 2: GET CONTAINER WITH EMERGENCY CREATION
-        let container = document.getElementById('search-autocomplete');
+        // ✅ GET STATIC CONTAINER (never create dynamically)
+        const container = document.getElementById('search-autocomplete');
         if (!container) {
-            console.warn('[SearchManager] 🚑 Creating missing #search-autocomplete container');
-            container = document.createElement('div');
-            container.id = 'search-autocomplete';
-            container.className = 'search-autocomplete';
-            container.setAttribute('role', 'region');
-            container.setAttribute('aria-live', 'polite');
-
-            // ✅ INLINE CRITICAL STYLES (bypasses missing CSS)
-            container.style.cssText = `
-            position: absolute !important;
-            top: 100% !important;
-            left: 0 !important;
-            right: 0 !important;
-            background: var(--color-background, white) !important;
-            border: 1px solid var(--color-border, #ddd) !important;
-            border-radius: 8px !important;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
-            margin-top: 8px !important;
-            z-index: 1000 !important;
-            display: block !important;
-            opacity: 1 !important;
-            visibility: visible !important;
-            max-height: 320px !important;
-            overflow-y: auto !important;
-            padding: 4px 0 !important;
-        `;
-
-            searchInput?.parentElement?.appendChild(container);
-            console.log('[SearchManager] ✅ Emergency container created and styled inline');
+            console.error('[SearchManager] FATAL: #search-autocomplete missing from HTML!');
+            return;
         }
 
         // Clear previous results
@@ -177,7 +143,6 @@ export class SearchManager {
 
         // Hide if no valid results
         if (!results || !Array.isArray(results) || results.length === 0) {
-            console.log('[SearchManager] No results, hiding autocomplete');
             this._hideAutocomplete();
             return;
         }
@@ -217,27 +182,24 @@ export class SearchManager {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('[SearchManager] Selected:', result.name);
                 this._selectResult(result);
             });
 
             resultsList.appendChild(item);
         });
 
-        // ✅ APPEND TO DYNAMICALLY-QUERIED CONTAINER
-        container.innerHTML = ''; // Double-clear for safety
+        // ✅ APPEND TO STATIC CONTAINER
         container.appendChild(resultsList);
 
-        // ✅ FORCE VISIBLE WITH MULTIPLE TECHNIQUES
-        // ✅ CRITICAL FIX 3: FORCE VISIBLE AFTER APPEND
-        container.style.display = 'block';
-        container.style.opacity = '1';
-        container.style.visibility = 'visible';
+        // ✅ FORCE VISIBLE WITH INLINE STYLES (bypasses CSS issues)
+        container.style.display = 'block !important';
+        container.style.opacity = '1 !important';
+        container.style.visibility = 'visible !important';
         container.classList.add('show');
 
-        console.log(`[SearchManager] ✅ Container forced visible. Children: ${container.children.length}`);
+        console.log(`[SearchManager] ✅ SHOWING ${results.length} results`);
 
-        // Setup keyboard nav
+        // Setup keyboard navigation
         const items = container.querySelectorAll('.search-result-item');
         if (items.length > 0) {
             this._cleanupKeyboardNav();
@@ -321,12 +283,9 @@ export class SearchManager {
     _hideAutocomplete() {
         const container = document.getElementById('search-autocomplete');
         if (container) {
-            container.style.display = 'none';
+            container.style.display = 'none !important';
             container.classList.remove('show');
             this._cleanupKeyboardNav();
-            console.log('[SearchManager] Autocomplete hidden');
-        } else {
-            console.warn('[SearchManager] Could not hide: container not found');
         }
     }
 
