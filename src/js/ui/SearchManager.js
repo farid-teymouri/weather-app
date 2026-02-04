@@ -110,59 +110,74 @@ export class SearchManager {
      */
     async _performSearch(query) {
         try {
-            // ✅ Show loading indicator in search input
-            this.searchInput.classList.add('search-loading');
+            // Show loading indicator
+            if (this.searchInput) {
+                this.searchInput.classList.add('loading');
+            }
 
+            console.log('[SearchManager] 🔍 Searching for:', query);
             const results = await this.weatherService.searchLocations(query);
+            console.log('[SearchManager] ✅ Received', results.length, 'results from API');
+
             this._showAutocomplete(results);
         } catch (error) {
-            console.error('[SearchManager] Search failed:', error);
+            console.error('[SearchManager] ❌ Search failed:', error);
             this._hideAutocomplete();
         } finally {
-            // ✅ Remove loading indicator
-            this.searchInput.classList.remove('search-loading');
+            // Remove loading indicator
+            if (this.searchInput) {
+                this.searchInput.classList.remove('loading');
+            }
         }
     }
     // In SearchManager class, update _showAutocomplete method
     _showAutocomplete(results) {
+        // ✅ CRITICAL DEBUG LOGS
+        console.log('[SearchManager] Rendering autocomplete with', results?.length || 0, 'results');
+
         if (!this.autocompleteContainer) {
-            console.warn('[SearchManager] Autocomplete container not found');
+            console.error('[SearchManager] ❌ FATAL: #search-autocomplete container NOT FOUND in DOM!');
+            console.error(
+                '[SearchManager] Check: 1) HTML has id="search-autocomplete" 2) SearchManager initialized after DOM ready'
+            );
             return;
         }
 
-        // Clear existing results
+        // Clear previous results
         this.autocompleteContainer.innerHTML = '';
 
-        // Hide if no results or empty query
-        if (!results || results.length === 0) {
+        // Hide if no valid results
+        if (!results || !Array.isArray(results) || results.length === 0) {
+            console.log('[SearchManager] No results to display, hiding autocomplete');
             this._hideAutocomplete();
             return;
         }
 
-        // Create results list
+        // Create results container
         const resultsList = document.createElement('div');
         resultsList.className = 'search-results';
         resultsList.setAttribute('role', 'listbox');
-        resultsList.setAttribute('aria-label', 'Search results');
+        resultsList.setAttribute('aria-label', `Search results (${results.length} locations)`);
 
-        // Add results
+        // Render each result
         results.forEach((result, index) => {
             const item = document.createElement('button');
             item.className = 'search-result-item';
             item.setAttribute('role', 'option');
             item.setAttribute('aria-selected', 'false');
             item.setAttribute('data-index', index);
+            item.setAttribute('type', 'button');
 
-            // Build location text (handle missing state)
+            // Build location text
             const locationText = result.state
                 ? `${result.name}, ${result.state}, ${result.country}`
                 : `${result.name}, ${result.country}`;
 
             item.innerHTML = `
             <div class="result-icon">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
             </div>
             <div class="result-text">
@@ -173,42 +188,39 @@ export class SearchManager {
 
             item.addEventListener('click', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
+                console.log('[SearchManager] Result clicked:', result.name);
                 this._selectResult(result);
             });
 
             resultsList.appendChild(item);
         });
 
-        // Add to container
-        // this.autocompleteContainer.appendChild(resultsList);
-        // this.autocompleteContainer.style.display = 'block';
+        // ✅ CRITICAL: Append to container BEFORE showing
+        this.autocompleteContainer.appendChild(resultsList);
 
-        // Add keyboard navigation
-        // this._setupKeyboardNav(results);
-        // ✅ FIXED: Clear container, append results, then get DOM nodes for keyboard nav
-        if (this.autocompleteContainer) {
-            this.autocompleteContainer.innerHTML = ''; // Clear previous results FIRST
-            this.autocompleteContainer.appendChild(resultsList);
-            this.autocompleteContainer.style.display = 'block';
+        // ✅ FORCE VISIBLE WITH ROBUST STYLES
+        this.autocompleteContainer.style.display = 'block';
+        this.autocompleteContainer.style.opacity = '1';
+        this.autocompleteContainer.style.visibility = 'visible';
+        this.autocompleteContainer.classList.add('show'); // Trigger CSS animation
 
-            // ✅ CRITICAL: Get ACTUAL DOM elements (buttons) - NOT data array
-            const resultItems = this.autocompleteContainer.querySelectorAll('.search-result-item');
+        console.log('[SearchManager] ✅ Autocomplete VISIBLE. Container styles:', {
+            display: this.autocompleteContainer.style.display,
+            opacity: this.autocompleteContainer.style.opacity,
+            classList: this.autocompleteContainer.className,
+        });
 
-            // ✅ Cleanup previous listeners to prevent memory leaks
-            if (this._cleanupKeyboardNav) {
-                this._cleanupKeyboardNav();
-            }
+        // Setup keyboard navigation
+        const resultItems = this.autocompleteContainer.querySelectorAll('.search-result-item');
+        console.log('[SearchManager] Found', resultItems.length, 'result items in DOM');
 
-            // ✅ Pass DOM nodes to keyboard navigation setup
-            if (resultItems.length > 0 && this._setupKeyboardNav) {
-                this._setupKeyboardNav(resultItems);
-            }
-
-            console.log(`[SearchManager] Showing ${resultItems.length} autocomplete results`);
+        if (resultItems.length > 0) {
+            this._cleanupKeyboardNav();
+            this._setupKeyboardNav(resultItems);
         } else {
-            console.error('[SearchManager] Autocomplete container not found!');
+            console.warn('[SearchManager] ⚠️ No .search-result-item elements found after rendering!');
         }
-        console.log(`[SearchManager] Showing ${results.length} autocomplete results`);
     }
 
     /**
@@ -287,8 +299,9 @@ export class SearchManager {
     _hideAutocomplete() {
         if (this.autocompleteContainer) {
             this.autocompleteContainer.style.display = 'none';
-            this.autocompleteContainer.setAttribute('aria-expanded', 'false');
-            this.autocompleteContainer.innerHTML = '';
+            this.autocompleteContainer.classList.remove('show');
+            this._cleanupKeyboardNav();
+            console.log('[SearchManager] Autocomplete hidden');
         }
     }
 

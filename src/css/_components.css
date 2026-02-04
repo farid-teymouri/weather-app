@@ -637,20 +637,42 @@
     font-weight: bold;
     font-size: 2rem;
 }
+/* ===== SEARCH CONTAINER (CRITICAL FOR POSITIONING) ===== */
+.search-container {
+    position: relative; /* ✅ REQUIRED for absolute autocomplete positioning */
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Autocomplete dropdown container */
 .search-autocomplete {
     position: absolute;
-    top: 100%;
+    top: 100%; /* Position directly below search input */
     left: 0;
     right: 0;
     background: var(--color-background);
     border: 1px solid var(--color-border);
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    margin-top: 4px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    margin-top: 8px; /* Space between input and dropdown */
     z-index: 1000;
-    display: none;
-    max-height: 300px;
+    display: none; /* Hidden by default */
+    max-height: 320px;
     overflow-y: auto;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease,
+        display 0.2s;
+}
+
+/* Show dropdown with smooth animation */
+.search-autocomplete.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .search-results {
@@ -721,4 +743,12 @@
 /* Smooth scroll behavior for autocomplete */
 .search-autocomplete {
     scroll-behavior: smooth;
+}
+/* Loading indicator during search */
+.search-input.loading {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='none' stroke='%234c6fff' stroke-width='2'/%3E%3CanimateTransform attributeName='transform' type='rotate' from='0 12 12' to='360 12 12' dur='1s' repeatCount='indefinite'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 20px;
+    padding-right: 40px !important;
 }
