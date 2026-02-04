@@ -132,28 +132,39 @@ export class SearchManager {
     }
     // In SearchManager class, update _showAutocomplete method
     _showAutocomplete(results) {
-        // ✅ DYNAMIC CONTAINER QUERY (avoids timing issues)
+        // DYNAMIC CONTAINER QUERY (avoids timing issues)
         const container = document.getElementById('search-autocomplete');
-        if (!container) {
-            console.error('[SearchManager] ❌ FATAL: #search-autocomplete NOT FOUND in DOM!');
-            console.error('[SearchManager] Possible causes:');
-            console.error('  1. HTML missing id="search-autocomplete"');
-            console.error('  2. Script executing before DOM ready (Vercel optimization)');
-            console.error('  3. Build process altered HTML structure');
 
-            // ✅ EMERGENCY FALLBACK: Create container dynamically
+        if (!container) {
+            console.error('[SearchManager] ❌ FATAL: #search-autocomplete MISSING from DOM!');
+            console.error('[SearchManager] This means your BUILD PROCESS stripped the HTML container.');
+            console.error('[SearchManager] SOLUTION: Check scripts/fix-html-paths.js preserves the container');
+
+            // EMERGENCY: Create container dynamically as last resort
             const searchInput = document.getElementById('location-search');
             if (searchInput?.parentElement) {
-                console.warn('[SearchManager] 🚑 Creating missing #search-autocomplete container...');
-                const newContainer = document.createElement('div');
-                newContainer.id = 'search-autocomplete';
-                newContainer.className = 'search-autocomplete';
-                newContainer.setAttribute('role', 'region');
-                newContainer.setAttribute('aria-live', 'polite');
-                searchInput.parentElement.appendChild(newContainer);
+                console.warn('[SearchManager] 🚑 Creating emergency container...');
+                const emergencyContainer = document.createElement('div');
+                emergencyContainer.id = 'search-autocomplete';
+                emergencyContainer.className = 'search-autocomplete';
+                emergencyContainer.style.cssText = `
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 1000;
+                display: block;
+                max-height: 300px;
+                overflow-y: auto;
+                margin-top: 8px;
+            `;
+                searchInput.parentElement.appendChild(emergencyContainer);
                 // Retry with new container
                 this._showAutocomplete(results);
-                return;
             }
             return;
         }
