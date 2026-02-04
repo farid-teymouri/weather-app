@@ -392,124 +392,61 @@ ${window.location.origin}/api/weather?lat=35.6892&lon=51.3890&units=metric&type=
         return `${this.apiBase}?${params.toString()}`;
     }
     /**
-     * Generate location-specific mock weather data with diverse conditions
-     * Uses coordinates to create deterministic but varied weather patterns
+     * Generate mock weather data (production-ready, no API dependency)
      * @private
      * @param {number} lat - Latitude
      * @param {number} lon - Longitude
-     * @param {string} units - Temperature units ('metric' or 'imperial')
-     * @returns {Object} Complete weather data object with varied conditions
+     * @param {string} units - Temperature units
+     * @returns {Object} Mock weather data
      */
     _getMockWeatherData(lat, lon, units) {
-        // Generate deterministic seed from coordinates (0-99)
-        const seed = Math.abs(Math.floor((Math.sin(lat * lon + lat + lon) * 10000) % 100));
-
-        // SPECIAL HANDLING FOR TEHRAN (Default Location)
-        const isTehran = Math.abs(lat - 35.6892) < 0.1 && Math.abs(lon - 51.389) < 0.1;
-
-        if (isTehran) {
-            // Authentic Tehran winter weather (February)
-            const tempC = 9;
-            return this._buildWeatherData({
-                name: 'Tehran',
-                country: 'IR',
-                lat: 35.6892,
-                lon: 51.389,
-                timezone: 12600,
-                temp: units === 'metric' ? tempC : Math.round((tempC * 9) / 5 + 32),
-                feelsLike: units === 'metric' ? 6 : 43,
-                tempMin: units === 'metric' ? 7 : 45,
-                tempMax: units === 'metric' ? 11 : 52,
-                pressure: 1020,
-                humidity: 45,
-                condition: 'Clouds',
-                description: 'scattered clouds',
-                windSpeed: units === 'metric' ? 3.2 : 7.2,
-                windDeg: 315,
-                clouds: 40,
-                units: units,
-            });
-        }
-
-        // SEASONAL ADJUSTMENT (February = Winter in Northern Hemisphere)
-        const month = 1; // February (0-indexed)
-        const isNorthernHemisphere = lat > 0;
-        const isWinter = isNorthernHemisphere ? month >= 11 || month <= 2 : month >= 5 && month <= 8;
-
-        // Calculate realistic temperature based on latitude and season
-        let baseTempC = 30 - Math.abs(lat) * 0.4;
-        if (isWinter) baseTempC -= 8;
-        const tempVariation = (seed % 7) - 3;
+        // Simple climate model based on latitude
+        const baseTempC = 30 - Math.abs(lat) * 0.4;
+        const tempVariation = Math.sin(lat * lon) * 3;
         let tempC = baseTempC + tempVariation;
-        tempC = Math.max(-15, Math.min(45, tempC));
+        tempC = Math.max(-10, Math.min(40, tempC));
+
         const temp = units === 'metric' ? Math.round(tempC) : Math.round((tempC * 9) / 5 + 32);
+        const feelsLike = units === 'metric' ? Math.round(tempC - 2) : Math.round(((tempC - 2) * 9) / 5 + 32);
 
-        // ✅ CRITICAL FIX: DIVERSE CONDITION GENERATION (0-99 seed range)
-        let condition, description, clouds, humidity;
-
-        // Use seed to determine condition with good distribution
-        if (isWinter) {
-            // Winter conditions: 30% Snow, 40% Clouds, 30% Clear
-            if (seed < 30) {
-                condition = 'Snow';
-                description = 'light snow';
-                clouds = 85;
-                humidity = 85;
-            } else if (seed < 70) {
-                condition = 'Clouds';
-                description = 'scattered clouds';
-                clouds = 60;
-                humidity = 70;
-            } else {
-                condition = 'Clear';
-                description = 'clear sky';
-                clouds = 15;
-                humidity = 50;
-            }
+        // Determine condition
+        let condition, description, icon;
+        if (tempC < 0) {
+            condition = 'Snow';
+            description = 'light snow';
+            icon = '13d';
+        } else if (tempC < 10) {
+            condition = 'Clouds';
+            description = 'scattered clouds';
+            icon = '03d';
+        } else if (tempC < 20) {
+            condition = 'Clouds';
+            description = 'few clouds';
+            icon = '02d';
         } else {
-            // Summer conditions: 20% Rain, 30% Clouds, 50% Clear
-            if (seed < 20) {
-                condition = 'Rain';
-                description = 'light rain';
-                clouds = 75;
-                humidity = 80;
-            } else if (seed < 50) {
-                condition = 'Clouds';
-                description = 'few clouds';
-                clouds = 40;
-                humidity = 65;
-            } else {
-                condition = 'Clear';
-                description = 'clear sky';
-                clouds = 10;
-                humidity = 45;
-            }
+            condition = 'Clear';
+            description = 'clear sky';
+            icon = '01d';
         }
 
-        // Wind direction based on hemisphere
-        const windDeg = isNorthernHemisphere
-            ? 270 + (seed % 90) // Westerlies dominant
-            : 90 + (seed % 90); // Easterlies dominant
-
-        return this._buildWeatherData({
-            name: 'Unknown Location',
-            country: 'XX',
-            lat: lat,
-            lon: lon,
+        return {
+            name: lat === 35.6892 && lon === 51.389 ? 'Tehran' : 'Unknown Location',
+            sys: { country: lat === 35.6892 && lon === 51.389 ? 'IR' : 'XX' },
+            main: {
+                temp,
+                feels_like: feelsLike,
+                temp_min: units === 'metric' ? Math.round(tempC - 3) : Math.round(((tempC - 3) * 9) / 5 + 32),
+                temp_max: units === 'metric' ? Math.round(tempC + 3) : Math.round(((tempC + 3) * 9) / 5 + 32),
+                pressure: 1015,
+                humidity: tempC < 10 ? 70 : 50,
+            },
+            weather: [{ main: condition, description, icon }],
+            wind: { speed: 3.6, deg: 270 },
+            clouds: { all: condition === 'Clear' ? 10 : 50 },
+            dt: Math.floor(Date.now() / 1000),
             timezone: Math.round(lon / 15) * 3600,
-            temp: temp,
-            feelsLike: temp - (isWinter ? 3 : 1),
-            tempMin: temp - 4,
-            tempMax: temp + 3,
-            pressure: 1015,
-            humidity: humidity,
-            condition: condition,
-            description: description,
-            windSpeed: units === 'metric' ? 3.6 : 8,
-            windDeg: windDeg,
-            clouds: clouds,
-            units: units,
-        });
+            coord: { lat, lon },
+        };
     }
     /**
      * Helper to build standardized weather data object
@@ -579,51 +516,61 @@ ${window.location.origin}/api/weather?lat=35.6892&lon=51.3890&units=metric&type=
         return icons[condition] || '03d';
     }
     /**
-     * Generate mock forecast data for development
+     * Generate mock forecast data (7 days)
      * @private
      * @param {number} lat - Latitude
      * @param {number} lon - Longitude
-     * @param {string} units - Temperature units ('metric' or 'imperial')
-     * @returns {Object} Mock forecast data
+     * @param {string} units - Temperature units
+     * @returns {Object} Mock forecast data with daily array
      */
     _getMockForecastData(lat, lon, units) {
         const daily = [];
         const baseTempC = 30 - Math.abs(lat) * 0.4;
-        const seedBase = Math.abs(Math.sin(lat * lon) * 10000);
 
         for (let i = 0; i < 7; i++) {
-            const seed = (seedBase + i * 100) % 1000;
-            const tempVariation = (seed % 5) - 2;
-            let tempC = baseTempC + tempVariation + i * 0.3;
-            tempC = Math.max(-10, Math.min(40, tempC));
+            const tempVariation = Math.sin((lat + i) * (lon + i)) * 4 + i * 0.5;
+            let tempC = baseTempC + tempVariation;
+            tempC = Math.max(-5, Math.min(40, tempC));
 
             const temp = units === 'metric' ? Math.round(tempC) : Math.round((tempC * 9) / 5 + 32);
 
-            // Cycle through conditions
+            // Cycle conditions for visual variety
             const conditions = [
                 { main: 'Clear', desc: 'clear sky', icon: '01d' },
                 { main: 'Clouds', desc: 'few clouds', icon: '02d' },
+                { main: 'Clouds', desc: 'scattered clouds', icon: '03d' },
                 { main: 'Rain', desc: 'light rain', icon: '10d' },
+                { main: 'Clear', desc: 'clear sky', icon: '01d' },
+                { main: 'Clouds', desc: 'broken clouds', icon: '04d' },
+                { main: 'Clear', desc: 'clear sky', icon: '01d' },
             ];
-            const condition = conditions[i % 3];
+            const condition = conditions[i % conditions.length];
 
             daily.push({
                 dt: Math.floor(Date.now() / 1000) + i * 86400,
                 temp: {
                     day: temp,
-                    min: temp - 5,
-                    max: temp + 3,
-                    night: temp - 3,
-                    eve: temp + 1,
-                    morn: temp - 4,
+                    min: units === 'metric' ? Math.round(tempC - 5) : Math.round(((tempC - 5) * 9) / 5 + 32),
+                    max: units === 'metric' ? Math.round(tempC + 5) : Math.round(((tempC + 5) * 9) / 5 + 32),
+                    night: units === 'metric' ? Math.round(tempC - 3) : Math.round(((tempC - 3) * 9) / 5 + 32),
+                    eve: units === 'metric' ? Math.round(tempC + 1) : Math.round(((tempC + 1) * 9) / 5 + 32),
+                    morn: units === 'metric' ? Math.round(tempC - 4) : Math.round(((tempC - 4) * 9) / 5 + 32),
                 },
-                weather: [
-                    {
-                        main: condition.main,
-                        description: condition.desc,
-                        icon: condition.icon,
-                    },
-                ],
+                feels_like: {
+                    day: units === 'metric' ? Math.round(tempC - 2) : Math.round(((tempC - 2) * 9) / 5 + 32),
+                    night: units === 'metric' ? Math.round(tempC - 4) : Math.round(((tempC - 4) * 9) / 5 + 32),
+                    eve: units === 'metric' ? Math.round(tempC) : Math.round((tempC * 9) / 5 + 32),
+                    morn: units === 'metric' ? Math.round(tempC - 5) : Math.round(((tempC - 5) * 9) / 5 + 32),
+                },
+                pressure: 1015,
+                humidity: 65,
+                dew_point: 5,
+                wind_speed: 3.6,
+                wind_deg: 270,
+                weather: [{ main: condition.main, description: condition.desc, icon: condition.icon }],
+                clouds: 40,
+                pop: condition.main === 'Rain' ? 0.4 : 0,
+                uvi: 5,
             });
         }
 
