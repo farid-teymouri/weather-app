@@ -319,7 +319,7 @@ ${window.location.origin}/api/weather?lat=35.6892&lon=51.3890&units=metric&type=
             await this._throttleRequest();
 
             // Fetch forecast data from API
-            const response = await this._fetchWithTimeout(this._buildWeatherUrl(lat, lon, units), {
+            const response = await this._fetchWithTimeout(this._buildForecastUrl(lat, lon, units), {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
