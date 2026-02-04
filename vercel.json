@@ -1,6 +1,4 @@
 {
-    "buildCommand": "npm run build",
-    "outputDirectory": "dist",
     "framework": "vite",
     "functions": {
         "api/weather.js": {
@@ -41,28 +39,12 @@
                     "value": "public, max-age=0, must-revalidate"
                 }
             ]
-        },
-        {
-            "source": "/manifest.json",
-            "headers": [
-                {
-                    "key": "Content-Type",
-                    "value": "application/manifest+json"
-                }
-            ]
         }
     ],
     "rewrites": [
         {
-            "source": "/(.*)",
+            "source": "/((?!api|icons|assets|manifest.json|service-worker.js).*)",
             "destination": "/index.html"
-        }
-    ],
-    "redirects": [
-        {
-            "source": "/api/(.*)",
-            "destination": "/api/$1",
-            "permanent": false
         }
     ]
 }
