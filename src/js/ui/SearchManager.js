@@ -110,63 +110,66 @@ export class SearchManager {
      */
     async _performSearch(query) {
         try {
-            // Show loading indicator
-            if (this.searchInput) {
-                this.searchInput.classList.add('loading');
-            }
-
-            console.log('[SearchManager] 🔍 Searching for:', query);
+            console.log('[SearchManager] 🔍 SEARCH STARTED:', query);
             const results = await this.weatherService.searchLocations(query);
-            console.log('[SearchManager] ✅ Received', results.length, 'results from API');
+            console.log('[SearchManager] ✅ API returned', results.length, 'results:', results);
+
+            // ✅ CRITICAL: Verify container exists BEFORE rendering
+            const containerCheck = document.getElementById('search-autocomplete');
+            console.log(
+                '[SearchManager] Container exists:',
+                !!containerCheck,
+                '| Parent position:',
+                containerCheck?.parentElement?.style.position
+            );
 
             this._showAutocomplete(results);
         } catch (error) {
             console.error('[SearchManager] ❌ Search failed:', error);
             this._hideAutocomplete();
-        } finally {
-            // Remove loading indicator
-            if (this.searchInput) {
-                this.searchInput.classList.remove('loading');
-            }
         }
     }
     // In SearchManager class, update _showAutocomplete method
     _showAutocomplete(results) {
-        // DYNAMIC CONTAINER QUERY (avoids timing issues)
-        const container = document.getElementById('search-autocomplete');
+        // ✅ CRITICAL FIX 1: FORCE PARENT CONTAINER POSITIONING (bypasses CSS issues)
+        const searchInput = document.getElementById('location-search');
+        if (searchInput?.parentElement) {
+            searchInput.parentElement.style.position = 'relative !important';
+            searchInput.parentElement.style.zIndex = '100';
+        }
 
+        // ✅ CRITICAL FIX 2: GET CONTAINER WITH EMERGENCY CREATION
+        let container = document.getElementById('search-autocomplete');
         if (!container) {
-            console.error('[SearchManager] ❌ FATAL: #search-autocomplete MISSING from DOM!');
-            console.error('[SearchManager] This means your BUILD PROCESS stripped the HTML container.');
-            console.error('[SearchManager] SOLUTION: Check scripts/fix-html-paths.js preserves the container');
+            console.warn('[SearchManager] 🚑 Creating missing #search-autocomplete container');
+            container = document.createElement('div');
+            container.id = 'search-autocomplete';
+            container.className = 'search-autocomplete';
+            container.setAttribute('role', 'region');
+            container.setAttribute('aria-live', 'polite');
 
-            // EMERGENCY: Create container dynamically as last resort
-            const searchInput = document.getElementById('location-search');
-            if (searchInput?.parentElement) {
-                console.warn('[SearchManager] 🚑 Creating emergency container...');
-                const emergencyContainer = document.createElement('div');
-                emergencyContainer.id = 'search-autocomplete';
-                emergencyContainer.className = 'search-autocomplete';
-                emergencyContainer.style.cssText = `
-                position: absolute;
-                top: 100%;
-                left: 0;
-                right: 0;
-                background: white;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                z-index: 1000;
-                display: block;
-                max-height: 300px;
-                overflow-y: auto;
-                margin-top: 8px;
-            `;
-                searchInput.parentElement.appendChild(emergencyContainer);
-                // Retry with new container
-                this._showAutocomplete(results);
-            }
-            return;
+            // ✅ INLINE CRITICAL STYLES (bypasses missing CSS)
+            container.style.cssText = `
+            position: absolute !important;
+            top: 100% !important;
+            left: 0 !important;
+            right: 0 !important;
+            background: var(--color-background, white) !important;
+            border: 1px solid var(--color-border, #ddd) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+            margin-top: 8px !important;
+            z-index: 1000 !important;
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            max-height: 320px !important;
+            overflow-y: auto !important;
+            padding: 4px 0 !important;
+        `;
+
+            searchInput?.parentElement?.appendChild(container);
+            console.log('[SearchManager] ✅ Emergency container created and styled inline');
         }
 
         // Clear previous results
@@ -226,16 +229,13 @@ export class SearchManager {
         container.appendChild(resultsList);
 
         // ✅ FORCE VISIBLE WITH MULTIPLE TECHNIQUES
+        // ✅ CRITICAL FIX 3: FORCE VISIBLE AFTER APPEND
         container.style.display = 'block';
         container.style.opacity = '1';
         container.style.visibility = 'visible';
         container.classList.add('show');
 
-        console.log(`[SearchManager] ✅ SHOWING ${results.length} results. Container:`, {
-            id: container.id,
-            display: window.getComputedStyle(container).display,
-            children: container.children.length,
-        });
+        console.log(`[SearchManager] ✅ Container forced visible. Children: ${container.children.length}`);
 
         // Setup keyboard nav
         const items = container.querySelectorAll('.search-result-item');
