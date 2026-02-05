@@ -78,6 +78,7 @@ export default async function handler(request) {
         }));
 
         console.log(`[Search] Found ${results.length} results for "${query}"`);
+        // Returns object with results array (your current implementation)
         return new Response(JSON.stringify({ results }), { status: 200, headers });
     } catch (error) {
         console.error('[Search] Edge Function error:', error);

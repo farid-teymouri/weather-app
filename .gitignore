@@ -65,3 +65,5 @@ htmlcov/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
+.vercel
+.env*.local

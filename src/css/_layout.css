@@ -112,6 +112,7 @@
     transform: none !important;
     width: 35px;
     height: 35px;
+    line-height: none;
 }
 
 .search-clear-btn svg {

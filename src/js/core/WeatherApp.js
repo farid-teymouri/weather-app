@@ -208,12 +208,45 @@ export class WeatherApp {
                 const position = await this.geolocationManager.getCurrentPosition();
 
                 if (position) {
-                    console.log(
-                        `[WeatherApp] Geolocation successful: ${position.coords.latitude}, ${position.coords.longitude}`
-                    );
-                    await this.getWeatherByCoordinates(position.coords.latitude, position.coords.longitude);
-                    this.toast.showSuccess('✅ Weather loaded for your location');
-                    return;
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    console.log(`[WeatherApp] Geolocation successful: ${lat}, ${lon}`);
+
+                    // ✅ CRITICAL FIX: PARALLEL REQUESTS - City name + Weather data SIMULTANEOUSLY
+                    // Both requests start at the same time → Total time = max(time1, time2) not sum
+                    try {
+                        // Start BOTH requests in parallel (weather + reverse geocoding)
+                        const [cityName, weatherData] = await Promise.all([
+                            this._reverseGeocode(lat, lon), // Gets city name
+                            this.weatherService.getWeather({ lat, lon, units: this.state.units }), // Gets weather
+                        ]);
+
+                        // ✅ OVERRIDE: Use reverse geocoded city name (never "Your Location")
+                        weatherData.name = cityName;
+
+                        // Get forecast data (sequential is fine - mock data is fast)
+                        const forecastData = await this.weatherService.getForecast({
+                            lat,
+                            lon,
+                            units: this.state.units,
+                        });
+
+                        // Update state with CORRECT city name from the start
+                        this.state.currentWeather = weatherData;
+                        this.state.forecast = forecastData;
+                        this.state.currentLocation = { lat, lon };
+
+                        // Render UI ONCE with complete data (city name + weather)
+                        this._updateUI();
+
+                        // Show success with ACTUAL city name (not "Your Location")
+                        this.toast.showSuccess(`✅ Weather loaded for ${cityName}`);
+                    } catch (error) {
+                        console.error('[WeatherApp] Error loading weather after geolocation:', error);
+                        throw error; // Propagate to outer catch block for fallback
+                    }
+
+                    return; // Exit early - success path complete
                 }
             } catch (geoError) {
                 console.warn('[WeatherApp] Geolocation failed:', geoError.message);
@@ -344,10 +377,15 @@ export class WeatherApp {
 
             // No return - allow finally block to execute (redundant but safe)
         } finally {
-            // ALWAYS hide loading spinner (critical for UX)
-            if (!this.state.isLoading) {
-                this._setLoading(false);
-            }
+            this._setLoading(false);
+
+            // ✅ EMERGENCY FALLBACK: Force hide spinner after 100ms if still visible
+            setTimeout(() => {
+                if (this.loadingSpinner && this.loadingSpinner.isVisible?.()) {
+                    console.warn('[WeatherApp] EMERGENCY: Forcing spinner hide after timeout');
+                    this.loadingSpinner.hide();
+                }
+            }, 100);
         }
     }
 
@@ -663,5 +701,58 @@ export class WeatherApp {
         }
 
         return this.state.favorites.some((fav) => fav.lat === location.lat && fav.lon === location.lon);
+    }
+
+    /**
+     * Reverse geocode coordinates to city name using OpenStreetMap Nominatim
+     * Integrated into initial loading flow with timeout protection
+     * @private
+     * @param {number} lat - Latitude
+     * @param {number} lon - Longitude
+     * @returns {Promise<string>} City name or formatted coordinates fallback
+     */
+    async _reverseGeocode(lat, lon) {
+        try {
+            // Timeout protection (3 seconds max)
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=en`,
+                {
+                    signal: controller.signal,
+                    headers: {
+                        'User-Agent': 'WeatherApp/1.0 (https://weather-app.vercel.app)',
+                        Accept: 'application/json',
+                    },
+                }
+            );
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            const data = await response.json();
+            const address = data.address;
+
+            // Get most specific location name available
+            const cityName =
+                address.city ||
+                address.town ||
+                address.village ||
+                address.suburb ||
+                address.hamlet ||
+                address.state_district ||
+                address.state ||
+                address.country ||
+                `Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`;
+
+            // Clean common suffixes for cleaner display
+            return cityName.replace(/ (Province|County|District|Region|State|Governorate)$/i, '').trim();
+        } catch (error) {
+            console.warn('[WeatherApp] Reverse geocoding failed or timed out:', error.message);
+            // Professional fallback: formatted coordinates
+            return `Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`;
+        }
     }
 }

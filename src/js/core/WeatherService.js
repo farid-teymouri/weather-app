@@ -774,7 +774,14 @@ ${window.location.origin}/api/weather?lat=35.6892&lon=51.3890&units=metric&type=
      * @returns {Array} Sanitized results
      */
     _sanitizeSearchResults(results) {
+        // Handle object response { results: [...] } from Edge Function
+        if (results && typeof results === 'object' && Array.isArray(results.results)) {
+            console.log('[WeatherService] Detected object response structure, extracting results array');
+            results = results.results;
+        }
+        // If still not an array, return empty array
         if (!Array.isArray(results)) {
+            console.warn('[WeatherService] Invalid search results format, returning empty array');
             return [];
         }
 
