@@ -125,11 +125,11 @@ function getMockCurrent(lat = 35.6892, lon = 51.389, units = 'metric') {
                 pressure: 1020,
                 humidity: humidity,
             },
-            weather: [{ main: condition, description: description, icon: iconCode }], // ✅ DYNAMIC ICON
+            weather: [{ main: condition, description: description, icon: iconCode }], //  DYNAMIC ICON
             wind: { speed: 3.2, deg: 315 },
             clouds: { all: clouds },
             dt: Math.floor(Date.now() / 1000),
-            timezone: 12600, // ✅ CORRECT TEHRAN TIMEZONE
+            timezone: 12600, // CORRECT TEHRAN TIMEZONE
             coord: { lat, lon },
         };
     }
@@ -257,7 +257,7 @@ function _getNearestCityName(lat, lon) {
 
 function getMockForecast(days = 7, lat = 35.6892, lon = 51.389, units = 'metric') {
     const forecast = [];
-    // ✅ CRITICAL FIX: Get BASE condition for THIS CITY (not fixed sequence!)
+    // Get BASE condition for THIS CITY (not fixed sequence!)
     const baseTempC = _getFebruaryBaseTemp(lat, lon);
     const baseWeather = _getWeatherCondition(baseTempC, lat);
 
@@ -269,7 +269,7 @@ function getMockForecast(days = 7, lat = 35.6892, lon = 51.389, units = 'metric'
         tempC = Math.max(-15, Math.min(30, tempC));
         const temp = units === 'metric' ? Math.round(tempC) : Math.round((tempC * 9) / 5 + 32);
 
-        // ✅ CRITICAL FIX: DYNAMIC WEATHER CONDITION BASED ON CITY'S CLIMATE
+        // DYNAMIC WEATHER CONDITION BASED ON CITY'S CLIMATE
         let dayCondition, dayDesc, dayIcon;
 
         // For VERY COLD cities (Berlin, Moscow): Mostly snow
@@ -359,7 +359,7 @@ function getMockForecast(days = 7, lat = 35.6892, lon = 51.389, units = 'metric'
             dew_point: tempC - 5,
             wind_speed: 2.5 + Math.random() * 3,
             wind_deg: _getPrevailingWindDirection(lat),
-            // ✅ CRITICAL: DYNAMIC WEATHER ARRAY WITH CORRECT ICON
+            //  DYNAMIC WEATHER ARRAY WITH CORRECT ICON
             weather: [{ main: dayCondition, description: dayDesc, icon: dayIcon }],
             clouds: baseWeather.clouds || (dayCondition === 'Clear' ? 10 : dayCondition === 'Snow' ? 85 : 50),
             pop: dayCondition === 'Snow' ? 0.6 : dayCondition === 'Rain' ? 0.4 : 0,

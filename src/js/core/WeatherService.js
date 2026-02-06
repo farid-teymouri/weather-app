@@ -409,14 +409,14 @@ ${window.location.origin}/api/weather?lat=35.6892&lon=51.3890&units=metric&type=
         // Source: https://en.climate-data.org/asia/iran/tehran/tehran-350/
         const isTehran = Math.abs(lat - 35.6892) < 0.1 && Math.abs(lon - 51.389) < 0.1;
         if (isTehran) {
-            // ✅ DYNAMIC: Get current hour in Tehran (UTC+3:30)
+            //  DYNAMIC: Get current hour in Tehran (UTC+3:30)
             const tehranOffset = 12600; // 3.5 hours in seconds
             const now = new Date();
             const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
             const tehranTime = new Date(utcTime + tehranOffset * 1000);
             const hour = tehranTime.getHours();
 
-            // ✅ DYNAMIC: Vary conditions based on time of day (realistic Tehran February patterns)
+            //  DYNAMIC: Vary conditions based on time of day (realistic Tehran February patterns)
             let condition, description, iconCode, clouds, humidity;
 
             if (hour >= 22 || hour < 6) {

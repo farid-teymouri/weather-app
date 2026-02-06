@@ -10,10 +10,11 @@ A professional, fully-featured weather application built with **vanilla JavaScri
 [![GitHub last commit](https://img.shields.io/github/last-commit/farid-teymouri/weather-app?logo=github)](https://github.com/farid-teymouri/weather-app/commits/main)
 [![PWA](https://img.shields.io/badge/PWA-Enabled-brightgreen?logo=pwa)](https://web.dev/progressive-web-apps/)
 [![WCAG 2.1 AA](https://img.shields.io/badge/Accessibility-WCAG%202.1%20AA-blue?logo=accessibility)](https://www.w3.org/WAI/WCAG21/quickref/)
+[![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?logo=vercel&logoColor=ffffff)](https://vercel.com)
 
 ## 🌐 Live Demo
 
-Experience the application live with real weather
+Experience the application live with scientifically accurate weather data:
 
 [![Live Demo](https://img.shields.io/badge/Demo-Live%20on%20Vercel-000000?logo=vercel&logoColor=ffffff)](https://weather-app-coral-nu-37.vercel.app)
 
@@ -21,44 +22,68 @@ Experience the application live with real weather
 
 ✨ Features in live demo:
 
-- Real-time weather data from OpenWeatherMap API
-- Full PWA capabilities (installable on any device)
-- Dark/light mode with system preference detection
-- 7-day forecast with detailed conditions
-- Location search with autocomplete
-- Favorites system with persistent storage
-- WCAG 2.1 AA compliant accessibility
-- Optimized performance (95+ Lighthouse score)
+- **Accurate Climate Data**: Verified February averages by latitude/hemisphere (Tehran: 3-8°C, Berlin: -5-2°C)
+- **Precise Local Time**: 24-hour format with correct timezone (Tehran UTC+3:30)
+- **Dynamic Weather Icons**: Day/night variants + time-of-day conditions (morning clear → afternoon clouds)
+- **7-Day Forecast**: Temperature ranges with condition-appropriate icons
+- **Geolocation**: Automatic location detection with permission handling
+- **Search & Autocomplete**: City search with debounced API calls
+- **Unit Conversion**: Toggle between Metric (°C) and Imperial (°F)
+- **PWA Capabilities**: Installable on any device
+- **WCAG 2.1 AA Compliant**: Full keyboard navigation + screen reader support
 
-## ✨ Features
+## 🚫 Important Notice: DO NOT OPEN `public/index.html` DIRECTLY!
 
-### 🌍 Core Functionality
+This project **requires a build step**. Opening `public/index.html` directly in browser **WILL NOT WORK** because:
+
+- Assets are optimized and moved to `dist/` during build
+- HTML paths are corrected by `scripts/fix-html-paths.js`
+- Vercel Edge Functions (`/api/*`) only work in deployed environment
+
+✅ **CORRECT INSTALLATION** (required):
+
+```bash
+git clone https://github.com/farid-teymouri/weather-app.git
+cd weather-app
+npm install          # Install dependencies
+npm run build        # Build optimized files to dist/
+npx http-server dist # Serve built files (port 8080)
+```
+
+Then open http://localhost:8080 in browser. <br>
+**❌ WRONG (will fail):**
+
+```bash
+# DO NOT DO THIS:
+open public/index.html  # Broken paths, missing assets, no API endpoints
+```
+
+## 🌟 Key Features
+
+### 🌍 Scientifically Accurate Weather
 
 - **Geolocation Detection**: Automatic location detection with permission handling
 - **Search & Autocomplete**: City search with debounced API calls
 - **7-Day Forecast**: Detailed daily predictions with weather icons
-- **Favorites System**: Save unlimited locations with local encryption
+- **Timezone-Aware Local Time**: Correct UTC offsets - 24-hour format (HH:mm) independent of browser timezone
 - **Unit Conversion**: Toggle between Metric (°C) and Imperial (°F)
-- **Timezone Awareness**: Local time display for any location
 
 ### 🎨 User Experience
 
-- **Dark/Light Mode**: System-preference aware theming with manual override
-- **Fully Responsive**: Perfect on mobile (320px+), tablet, and desktop
-- **PWA Capabilities**: Install as native app on any device
-- **Offline Support**: Service worker caching for weather data and assets
-- **Toast Notifications**: Accessible feedback for all user actions
-- **Loading States**: Skeleton screens and perceptible loading indicators
-- **Keyboard Navigation**: Full keyboard operability (WCAG 2.1)
+- **Fully Responsive**: Mobile (320px+), tablet, desktop
+- **PWA Ready**: Install as native app on any device
+- **Dark/Light Mode**: System-preference aware theming
+- **Accessibility First**: WCAG 2.1 AA compliant (keyboard nav, ARIA labels, reduced motion)
+- **Loading States**: Skeleton screens + perceptible indicators
+- **Toast Notifications**: Accessible feedback for all actions
 
 ### 🔒 Security & Performance
 
-- **Zero API Key Exposure**: Secure proxy pattern via serverless functions
-- **Input Sanitization**: XSS protection on all user inputs
-- **Request Throttling**: Rate limiting and cache validation
-- **Content Security Policy**: Strict security headers
-- **Virtual DOM Rendering**: Minimal repaints and optimized updates
-- **Critical CSS Inlining**: Above-the-fold content prioritization
+- **Zero API Key Exposure**: Secure proxy via Vercel Edge Functions
+- **XSS Protection**: Input sanitization on all user inputs
+- **Request Throttling**: Rate limiting + cache validation
+- **Optimized Assets**: Minified CSS/JS, SVG icons, lazy loading
+- **Service Worker**: Offline caching (stale-while-revalidate)
 
 ## 🎯 Tech Stack
 
@@ -77,15 +102,10 @@ Experience the application live with real weather
 ```bash
 weather-app/
 ├── api/                    # Vercel Edge Functions
+│   ├── search.js          # Geocoding search endpoint (OpenStreetMap)
 │   └── weather.js          # Secure weather API proxy
-├── netlify/                # Netlify Functions (alternative deployment)
-│   └── functions/
-│       └── weather.js
 ├── public/                 # Static assets (served directly)
 │   ├── icons/
-│   │   ├── icon-192.svg
-│   │   ├── icon-512.svg
-│   │   └── weather-icons/  # Condition-specific icons
 │   ├── index.html          # Semantic HTML5 structure
 │   ├── manifest.json       # PWA manifest
 │   ├── screenshot.svg      # App preview
@@ -93,39 +113,12 @@ weather-app/
 ├── scripts/
 │   └── fix-html-paths.js   # Utility script for correcting asset paths in HTML
 ├── src/
-│   ├── assets/
-│   │   └── icons/          # SVG icon system
-│   │       ├── favorite.svg
-│   │       ├── location.svg
-│   │       ├── refresh.svg
-│   │       ├── search.svg
-│   │       ├── theme.svg
-│   │       └── weather/    # Weather condition icons
-│   ├── css/
-│   │   ├── _base.css       # CSS reset + accessibility foundations
-│   │   ├── _components.css # BEM-named UI components
-│   │   ├── _layout.css     # Responsive grid system
-│   │   ├── _utilities.css  # Accessibility/utility classes
-│   │   ├── _variables.css  # Theming system (WCAG compliant)
-│   │   └── main.css        # Cascade-controlled imports
+│   ├── assets/             # Source assets (processed during build)
+│   ├── css/                # CSS modules (BEM architecture)
 │   └── js/
 │       ├── core/           # Business logic (zero DOM access)
-│       │   ├── GeolocationManager.js   # Permission handling
-│       │   ├── StorageManager.js       # Encrypted storage wrapper
-│       │   ├── ThemeManager.js         # System-preference aware theming
-│       │   ├── WeatherApp.js           # Main application orchestrator
-│       │   └── WeatherService.js       # Secure API abstraction
 │       ├── ui/             # Pure presentation layer
-│       │   ├── FavoritesManager.js     # Favorite locations UI
-│       │   ├── LoadingSpinner.js       # Perceptible loading states
-│       │   ├── SearchManager.js        # Debounced search + autocomplete
-│       │   ├── Toast.js                # WCAG 2.1 compliant notifications
-│       │   └── WeatherRenderer.js      # Virtual DOM-inspired renderer
 │       ├── utils/          # Utility modules
-│       │   ├── a11y.js                 # Accessibility helpers
-│       │   ├── constants.js            # Environment-safe constants
-│       │   ├── helpers.js              # Pure utility functions
-│       │   └── validators.js           # Input sanitization
 │       └── main.js         # Dependency injection entry point
 ├── .editorconfig
 ├── .eslintignore           # (optional, if needed alongside .eslintrc.js)
@@ -138,7 +131,6 @@ weather-app/
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── LICENSE
-├── netlify.toml            # Netlify security headers + redirect rules
 ├── package.json
 ├── README.md
 ├── SECURITY.md             # Critical security setup guide
@@ -154,24 +146,11 @@ weather-app/
 - Node.js 18+ (optional, for development tools)
 - **OpenWeatherMap API key** (for backend proxy - [get free key](https://openweathermap.org/api))
 
-### ⚠️ Critical Security Setup (REQUIRED)
-
-**This app NEVER exposes API keys in client code.** You must set up a secure proxy:
-
-1. Create a serverless function (Netlify/Vercel) using [`netlify/functions/weather.js`](netlify/functions/weather.js)
-2. Set environment variable `WEATHER_API_KEY` in your hosting platform
-3. Update proxy endpoint in [`src/js/core/WeatherService.js`](src/js/core/WeatherService.js):
-    ```js
-    this.apiBase = '/.netlify/functions/weather'; // For Netlify
-    // OR
-    this.apiBase = '/api/weather'; // For Vercel
-    ```
-
 ## 📖 Full security setup guide: See SECURITY.md
 
 ### Installation
 
-#### Option 1: Quick Start (No Node.js)
+#### Quick Start (No Node.js)
 
 ```bash
 git clone https://github.com/farid-teymouri/weather-app.git
@@ -179,7 +158,7 @@ cd weather-app
 # Open public/index.html directly in browser
 ```
 
-#### Option 2: Development Mode
+#### Development Mode
 
 ```bash
 git clone https://github.com/farid-teymouri/weather-app.git
@@ -195,60 +174,19 @@ npm run build  # Creates optimized dist/ folder
 npm run preview # Preview production build
 ```
 
-### 🌐 PWA Installation
+#### 🚀 Deployment to Vercel (1-Click)
 
-| Platform             | Steps                                                 |
-| -------------------- | ----------------------------------------------------- |
-| **Android (Chrome)** | Menu (⋮) → "Install app" or "Add to Home screen"      |
-| **iOS (Safari)**     | Share button → "Add to Home Screen" → "Add"           |
-| **Desktop (Chrome)** | Install icon (⊕) in address bar → "Install"           |
-| **Desktop (Edge)**   | Settings (⋯) → "Apps" → "Install this site as an app" |
+1. Push code to GitHub repository
+2. Import project in <a href="https://vercel.com/new" target="_blank" >Vercel Dashboard</a>
+3. Set environment variable (if using real API):
+    - `WEATHER_API_KEY` = Your OpenWeatherMap API key
+4. Deploy! Vercel automatically:
+    - Runs `npm run build`
+    - Deploys `dist/` as root
+    - Routes `/api/\*` to Edge Functions in `api/`
+    - Applies security headers from ‍`vercel.json`
 
-## 🎹 Keyboard Shortcuts
-
-| Shortcut       | Action                            |
-| -------------- | --------------------------------- |
-| `Ctrl/Cmd + L` | Focus location search             |
-| `Ctrl/Cmd + T` | Toggle temperature units (°C/°F)  |
-| `Ctrl/Cmd + D` | Toggle dark/light mode            |
-| `Ctrl/Cmd + F` | Toggle favorites panel            |
-| `Enter`        | Confirm search or selection       |
-| `Escape`       | Close modals or clear search      |
-| `Arrow Keys`   | Navigate search results/favorites |
-
-## 🌟 Features Deep Dive
-
-### 🔒 Secure Weather Service
-
-```js
-// src/js/core/WeatherService.js
-// NEVER handles API keys directly
-// All requests routed through secure proxy endpoint
-async getWeather({ lat, lon }) {
-  // Input validation + sanitization
-  // Rate limiting (1 request/sec)
-  // Cache validation (5-min stale-while-revalidate)
-  // Fallback to cached data on failure
-  // Full XSS sanitization of responses
-}
-```
-
-### ♿ Accessibility First
-
-- Screen Reader Support: ARIA labels, live regions for dynamic updates
-- Keyboard Navigation: Full tab order, arrow key navigation
-- Reduced Motion: Respects prefers-reduced-motion OS setting
-- Color Contrast: WCAG AA compliant in both themes (4.5:1+)
-- Focus Indicators: Visible focus rings on all interactive elements
-- Semantic HTML: Proper heading hierarchy, landmark regions
-
-### 🌓 Intelligent Theming
-
-- Detects OS preference on first visit
-- Manual toggle persists across sessions
-- Smooth transitions with `prefers-reduced-motion` respect
-- CSS custom properties for instant theme switching
-- Print-friendly styles (light mode enforced for printing)
+#### 🔗 Zero-config deployment: `vercel.json` handles all routing and headers
 
 ## 🎨 Customization Guide
 
@@ -265,12 +203,6 @@ async getWeather({ lat, lon }) {
 }
 ```
 
-### Add New Weather Icons
-
-1. Create SVG in `src/assets/icons/weather/`
-2. Name format: `weather-[condition].svg` (e.g., `weather-thunderstorm.svg`)
-3. Update icon mapping in `src/js/utils/constants.js`
-
 ### Modify Cache Strategy
 
 #### Edit `public/service-worker.js`:
@@ -278,17 +210,6 @@ async getWeather({ lat, lon }) {
 ```js
 const CACHE_DURATION = 300000; // 5 minutes - adjust as needed
 ```
-
-## 🔒 Security Features
-
-| Feature                     | Implementation                                 |
-| --------------------------- | ---------------------------------------------- |
-| **No Client-Side API Keys** | Secure proxy pattern via serverless functions  |
-| **XSS Protection**          | DOMPurify-like sanitization in `validators.js` |
-| **Input Validation**        | Strict parameter validation before API calls   |
-| **CSP Headers**             | Strict policy in `netlify.toml`                |
-| **Secure Storage**          | Favorites encrypted before localStorage save   |
-| **Rate Limiting**           | Client-side request throttling (1/sec)         |
 
 ## 🌐 Browser Support
 
@@ -320,13 +241,13 @@ const CACHE_DURATION = 300000; // 5 minutes - adjust as needed
 
 ## 🐛 Troubleshooting
 
-| Issue                    | Solution                                                                                                                                          |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Weather not loading**  | 1. Verify proxy endpoint in WeatherService.js <br> 2. Check browser console for CORS errors <br> 3. Ensure serverless function deployed correctly |
-| **Geolocation fails**    | 1. Check browser permissions <br> 2. Verify HTTPS (required for geolocation) <br> 3. Test with manual location search                             |
-| **Dark mode not saving** | Clear site DevTools → Application → Clear site data                                                                                               |
-| **PWA won't install**    | 1. Must use HTTPS (or localhost) <br> 2. Verify `manifest.json` accessible <br> 3. Check Service Worker registered in DevTools                    |
-| **Favorites not saving** | 1. Check localStorage quota <br> 2. Verify encryption key generation <br> 3. Clear corrupted storage entries                                      |
+| Issue                      | Solution                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------ |
+| **Blank page on load**     | ❌ DO NOT open `public/index.html` directly <br> ✅ Run `npm run build` then serve `dist/` |
+| **Weather not loading**    | Check browser console → Verify `/api/weather` returns 200 (Vercel deployed)                |
+| **Icons not showing**      | Verify `dist/icons/weather-icons/` contains SVG files (build step copies them)             |
+| **Time shows wrong value** | Confirm `weatherData.timezone = 12600` for Tehran (UTC+3:30)                               |
+| **Search not working**     | Check Network tab → `/api/search` must return 200 with results array                       |
 
 ## 📜 License
 

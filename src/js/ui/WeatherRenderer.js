@@ -50,7 +50,7 @@ export class WeatherRenderer {
                 locationName.classList.remove('skeleton');
             }
 
-            // ✅ FINAL FIX: Manual time calculation using ONLY UTC time + timezone offset
+            //  Manual time calculation using ONLY UTC time + timezone offset
             // This method is 100% browser-timezone independent and mathematically precise
             let localTimeString = '--:--';
             if (weatherData.timezone != null) {
@@ -78,7 +78,7 @@ export class WeatherRenderer {
                     const minutes = localMinute.toString().padStart(2, '0');
                     localTimeString = `${hours}:${minutes}`;
 
-                    // ✅ DEBUG LOGGING: Verify calculation with actual values
+                    // DEBUG LOGGING: Verify calculation with actual values
                     console.log(
                         `[WeatherRenderer] ✅ Local time: ${localTimeString} | UTC: ${utcHour.toString().padStart(2, '0')}:${utcMinute.toString().padStart(2, '0')} | Offset: ${timezoneMinutes}m (${(weatherData.timezone / 3600).toFixed(1)}h) | City: ${weatherData.name}`
                     );
@@ -130,7 +130,7 @@ export class WeatherRenderer {
             }
 
             // Weather icon and condition text update - COMPLETE REBUILD STRATEGY
-            // ✅ CRITICAL FIX 1: Update main weather icon dynamically
+            // Update main weather icon dynamically
             const mainIconImg = document.querySelector('.main-weather-icon');
             const conditionElement = document.querySelector('.weather-condition');
 
@@ -146,7 +146,7 @@ export class WeatherRenderer {
                 const condition = weather.main || 'Clouds';
                 const description = weather.description || 'Cloudy';
 
-                // ✅ Set icon with absolute path (works on Vercel)
+                // Set icon with absolute path (works on Vercel)
                 mainIconImg.src = `/icons/weather-icons/${iconCode}.svg`;
                 mainIconImg.alt = description;
                 mainIconImg.onerror = () => {
@@ -288,7 +288,7 @@ export class WeatherRenderer {
             return;
         }
 
-        // ✅ CRITICAL FIX 1: CLEAR CONTAINER COMPLETELY
+        //  CLEAR CONTAINER COMPLETELY
         forecastContainer.innerHTML = '';
         console.log(`[WeatherRenderer] Rendering ${Math.min(forecastData.daily.length, 7)} forecast days`);
 
@@ -304,7 +304,7 @@ export class WeatherRenderer {
             dateElement.textContent = this._getDayName(index);
             dayElement.appendChild(dateElement);
 
-            // ✅ CRITICAL FIX 2: SMART ICON EXTRACTION (handles BOTH data structures)
+            // SMART ICON EXTRACTION (handles BOTH data structures)
             let iconCode, iconDesc, condition;
 
             // Try OpenWeatherMap structure first (weather array)

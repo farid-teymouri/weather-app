@@ -240,7 +240,7 @@ export class WeatherApp {
 
                     return; // Exit early - success path complete
                 }
-                this._initFavoriteButton(); // ✅ Initialize favorite button state
+                this._initFavoriteButton(); // Initialize favorite button state
             } catch (geoError) {
                 console.warn('[WeatherApp] Geolocation failed:', geoError.message);
                 // Continue to fallback location
