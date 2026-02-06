@@ -120,7 +120,7 @@ export class SearchManager {
             const results = await this.weatherService.searchLocations(query);
             console.log('[SearchManager] ✅ API returned', results.length, 'results:', results);
 
-            // ✅ CRITICAL: Verify container exists BEFORE rendering
+            //  Verify container exists BEFORE rendering
             const containerCheck = document.getElementById('search-autocomplete');
             console.log(
                 '[SearchManager] Container exists:',
@@ -137,7 +137,7 @@ export class SearchManager {
     }
     // In SearchManager class, update _showAutocomplete method
     _showAutocomplete(results) {
-        // ✅ GET STATIC CONTAINER (never create dynamically)
+        // GET STATIC CONTAINER (never create dynamically)
         const container = document.getElementById('search-autocomplete');
         if (!container) {
             console.error('[SearchManager] FATAL: #search-autocomplete missing from HTML!');
@@ -194,7 +194,7 @@ export class SearchManager {
             resultsList.appendChild(item);
         });
 
-        // ✅ APPEND TO STATIC CONTAINER
+        // APPEND TO STATIC CONTAINER
         container.appendChild(resultsList);
 
         // Show the container - remove !important to respect CSS

@@ -17,7 +17,6 @@ export class WeatherRenderer {
         this.elements = {
             currentWeather: document.getElementById('current-weather'),
             forecastContainer: document.querySelector('.forecast-container'),
-            favoritesList: document.getElementById('favorites-list'),
             temperatureUnit: document.querySelector('.temperature-unit'),
             unitDisplay: document.querySelector('.unit-display'),
         };
@@ -51,16 +50,69 @@ export class WeatherRenderer {
                 locationName.classList.remove('skeleton');
             }
 
+            // ✅ FINAL FIX: Manual time calculation using ONLY UTC time + timezone offset
+            // This method is 100% browser-timezone independent and mathematically precise
+            let localTimeString = '--:--';
+            if (weatherData.timezone != null) {
+                try {
+                    // Get CURRENT UTC time components (browser timezone independent)
+                    const now = new Date();
+                    const utcHour = now.getUTCHours(); // 0-23 UTC hour
+                    const utcMinute = now.getUTCMinutes(); // 0-59 UTC minute
+
+                    // Convert timezone offset from seconds to total minutes
+                    const timezoneMinutes = weatherData.timezone / 60; // e.g., 12600s → 210 minutes (+3:30)
+
+                    // Calculate local time in total minutes since midnight
+                    let localTotalMinutes = utcHour * 60 + utcMinute + timezoneMinutes;
+
+                    // Handle day rollover (negative or > 1440 minutes)
+                    localTotalMinutes = ((localTotalMinutes % 1440) + 1440) % 1440;
+
+                    // Extract hour and minute in 24-hour format
+                    const localHour = Math.floor(localTotalMinutes / 60);
+                    const localMinute = Math.floor(localTotalMinutes % 60);
+
+                    // Format as HH:mm (24-hour)
+                    const hours = localHour.toString().padStart(2, '0');
+                    const minutes = localMinute.toString().padStart(2, '0');
+                    localTimeString = `${hours}:${minutes}`;
+
+                    // ✅ DEBUG LOGGING: Verify calculation with actual values
+                    console.log(
+                        `[WeatherRenderer] ✅ Local time: ${localTimeString} | UTC: ${utcHour.toString().padStart(2, '0')}:${utcMinute.toString().padStart(2, '0')} | Offset: ${timezoneMinutes}m (${(weatherData.timezone / 3600).toFixed(1)}h) | City: ${weatherData.name}`
+                    );
+                } catch (error) {
+                    console.warn('[WeatherRenderer] Time calculation failed:', error.message);
+                    // Fallback: Simple UTC time in 24-hour format
+                    const now = new Date();
+                    const hours = now.getUTCHours().toString().padStart(2, '0');
+                    const minutes = now.getUTCMinutes().toString().padStart(2, '0');
+                    localTimeString = `${hours}:${minutes}`;
+                }
+            }
+
+            // Update location details with CORRECT 24-hour time
             if (locationDetails && weatherData.weather?.[0]) {
                 const weather = weatherData.weather[0];
-                const date = new Date();
-                const timeString = date.toLocaleTimeString(undefined, {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                });
-
-                locationDetails.textContent = `${this._capitalizeFirstLetter(weather.description)} • ${timeString}`;
+                locationDetails.textContent = `${this._capitalizeFirstLetter(weather.description)} • ${localTimeString}`;
                 locationDetails.classList.remove('skeleton');
+                locationDetails.setAttribute(
+                    'aria-label',
+                    `Weather: ${weather.description}, Local time: ${localTimeString}`
+                );
+            }
+
+            // Update .local-time element below main icon (if exists)
+            const localTimeElement = weatherCard.querySelector('.local-time');
+            if (localTimeElement) {
+                localTimeElement.textContent = localTimeString;
+                localTimeElement.setAttribute('aria-label', `Local time in ${weatherData.name}: ${localTimeString}`);
+                localTimeElement.style.opacity = '0';
+                setTimeout(() => {
+                    localTimeElement.style.opacity = '1';
+                    localTimeElement.style.transition = 'opacity 0.3s ease';
+                }, 50);
             }
 
             // Temperature
@@ -78,66 +130,35 @@ export class WeatherRenderer {
             }
 
             // Weather icon and condition text update - COMPLETE REBUILD STRATEGY
-            const weatherIconContainer = weatherCard.querySelector('.weather-icon-container');
-            if (weatherIconContainer && weatherData.weather?.[0]) {
-                const weather = weatherData.weather[0];
-                const iconSvg = getWeatherIcon(weather.main); // Returns full SVG string
-                const conditionText = this._capitalizeFirstLetter(weather.description);
+            // ✅ CRITICAL FIX 1: Update main weather icon dynamically
+            const mainIconImg = document.querySelector('.main-weather-icon');
+            const conditionElement = document.querySelector('.weather-condition');
 
-                // ✅ CRITICAL FIX 1: Clear container COMPLETELY before rebuild
-                weatherIconContainer.innerHTML = '';
+            if (mainIconImg && conditionElement) {
+                // Extract weather condition safely
+                const weather = weatherData.weather?.[0] || {
+                    icon: '03d',
+                    description: 'Cloudy',
+                    main: 'Clouds',
+                };
 
-                // Parse SVG string safely
-                const parser = new DOMParser();
-                const svgDoc = parser.parseFromString(iconSvg.trim(), 'image/svg+xml');
-                const svgElement = svgDoc.documentElement;
+                const iconCode = weather.icon || '03d';
+                const condition = weather.main || 'Clouds';
+                const description = weather.description || 'Cloudy';
 
-                // Validate SVG parsing
-                if (svgElement.tagName.toLowerCase() === 'svg') {
-                    // Configure SVG element
-                    svgElement.classList.add('weather-icon');
-                    svgElement.setAttribute('aria-hidden', 'true');
-                    svgElement.setAttribute('role', 'img');
-                    svgElement.style.opacity = '0'; // For fade-in effect
+                // ✅ Set icon with absolute path (works on Vercel)
+                mainIconImg.src = `/icons/weather-icons/${iconCode}.svg`;
+                mainIconImg.alt = description;
+                mainIconImg.onerror = () => {
+                    console.warn(`[WeatherRenderer] Icon load failed for ${iconCode}, using fallback`);
+                    mainIconImg.src = '/icons/weather-icons/03d.svg';
+                };
 
-                    // Append SVG to container
-                    weatherIconContainer.appendChild(svgElement);
+                // Update condition text
+                conditionElement.textContent = condition;
+                conditionElement.setAttribute('aria-label', `Weather condition: ${condition}`);
 
-                    // ✅ CRITICAL FIX 2: Recreate condition text element (was being destroyed)
-                    const conditionEl = document.createElement('p');
-                    conditionEl.className = 'weather-condition';
-                    conditionEl.textContent = conditionText;
-                    conditionEl.setAttribute('aria-label', `Weather condition: ${conditionText}`);
-                    conditionEl.style.opacity = '0';
-                    weatherIconContainer.appendChild(conditionEl);
-
-                    // Apply smooth fade-in transition to both elements
-                    requestAnimationFrame(() => {
-                        svgElement.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                        svgElement.style.opacity = '1';
-
-                        conditionEl.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.1s';
-                        conditionEl.style.opacity = '1';
-                    });
-
-                    // Remove skeleton state from container
-                    weatherIconContainer.classList.remove('skeleton');
-
-                    console.log(`[WeatherRenderer] Updated icon to: ${weather.main} (${conditionText})`);
-                } else {
-                    // Fallback if SVG parsing fails
-                    console.error('[WeatherRenderer] Failed to parse weather icon SVG');
-                    weatherIconContainer.innerHTML = `
-            <div class="weather-icon-fallback" aria-label="Weather icon unavailable">
-                <span class="fallback-text">${weather.main.charAt(0)}</span>
-            </div>
-            <p class="weather-condition">${conditionText}</p>
-        `;
-                    weatherIconContainer.classList.remove('skeleton');
-                }
-                console.log('Container children:', weatherIconContainer.children.length);
-                console.log('First child:', weatherIconContainer.firstChild?.tagName);
-                console.log('Condition text:', weatherIconContainer.querySelector('.weather-condition')?.textContent);
+                console.log(`[WeatherRenderer] ✅ Main icon updated: ${iconCode} (${condition})`);
             }
 
             // Weather details
@@ -255,200 +276,171 @@ export class WeatherRenderer {
     }
 
     /**
-     * Render forecast data
-     * @param {Object} forecastData - Forecast data object
-     * @param {string} units - Temperature units
+     * Render 7-day forecast with dynamic icons and temperatures
+     * Handles both OpenWeatherMap structure AND mock data structure
+     * @param {Object} forecastData - Forecast data object with daily array
+     * @param {string} units - Temperature units ('metric' or 'imperial')
      */
     renderForecast(forecastData, units) {
-        if (!this.elements.forecastContainer) {
-            console.warn('[WeatherRenderer] Forecast container not found');
+        const forecastContainer = document.querySelector('#forecast .forecast-container');
+        if (!forecastContainer || !forecastData || !forecastData.daily) {
+            console.warn('[WeatherRenderer] Forecast container not found or invalid data');
             return;
         }
 
-        try {
-            // Clear existing forecast items
-            this.elements.forecastContainer.innerHTML = '';
+        // ✅ CRITICAL FIX 1: CLEAR CONTAINER COMPLETELY
+        forecastContainer.innerHTML = '';
+        console.log(`[WeatherRenderer] Rendering ${Math.min(forecastData.daily.length, 7)} forecast days`);
 
-            // Render forecast items
-            if (forecastData?.daily && Array.isArray(forecastData.daily)) {
-                const forecastDays = forecastData.daily.slice(0, 7);
+        // Render each day (max 7 days)
+        forecastData.daily.slice(0, 7).forEach((day, index) => {
+            const dayElement = document.createElement('div');
+            dayElement.className = 'forecast-day';
+            dayElement.setAttribute('aria-label', `Forecast for ${this._getDayName(index)}`);
 
-                if (forecastDays.length === 0) {
-                    this.elements.forecastContainer.innerHTML = `
-            <div class="forecast-empty" role="alert">
-              <p>No forecast data available</p>
-            </div>
-          `;
-                    return;
+            // Date/Day name
+            const dateElement = document.createElement('div');
+            dateElement.className = 'forecast-date';
+            dateElement.textContent = this._getDayName(index);
+            dayElement.appendChild(dateElement);
+
+            // ✅ CRITICAL FIX 2: SMART ICON EXTRACTION (handles BOTH data structures)
+            let iconCode, iconDesc, condition;
+
+            // Try OpenWeatherMap structure first (weather array)
+            if (day.weather?.[0]?.icon) {
+                iconCode = day.weather[0].icon;
+                iconDesc = day.weather[0].description || 'Cloudy';
+                condition = day.weather[0].main || 'Clouds';
+                console.log(`[Forecast] Day ${index}: Using OWM structure - ${iconCode}`);
+            }
+            // Fallback to mock data structure (direct properties)
+            else if (day.icon || day.condition) {
+                iconCode = day.icon || this._getIconCodeFromCondition(day.condition || 'Clouds');
+                iconDesc = day.description || 'Cloudy';
+                condition = day.condition || 'Clouds';
+                console.log(`[Forecast] Day ${index}: Using mock structure - ${iconCode}`);
+            }
+            // Ultimate fallback
+            else {
+                iconCode = '03d';
+                iconDesc = 'Cloudy';
+                condition = 'Clouds';
+                console.warn(`[Forecast] Day ${index}: No icon data found, using fallback`);
+            }
+
+            // Create icon container with absolute path
+            const iconContainer = document.createElement('div');
+            iconContainer.className = 'forecast-icon';
+            iconContainer.innerHTML = `
+            <img 
+                src="/icons/weather-icons/${iconCode}.svg" 
+                alt="${iconDesc}" 
+                class="weather-icon"
+                loading="lazy"
+                onerror="this.src='/icons/weather-icons/03d.svg'"
+            >
+        `;
+            dayElement.appendChild(iconContainer);
+
+            // Temperature range
+            const tempElement = document.createElement('div');
+            tempElement.className = 'forecast-temp';
+            const tempMin = this._formatTemperature(day.temp?.min ?? day.temp_min, units);
+            const tempMax = this._formatTemperature(day.temp?.max ?? day.temp_max, units);
+            tempElement.innerHTML = `<span class="temp-min">${tempMin}</span> / <span class="temp-max">${tempMax}</span>`;
+            dayElement.appendChild(tempElement);
+
+            // Append to container
+            forecastContainer.appendChild(dayElement);
+
+            if (index === 0) {
+                // TODAY: Use current time to determine day/night icon
+                const now = new Date();
+                const hour = now.getHours();
+                const isDayTime = hour >= 6 && hour < 18;
+                const timeSuffix = isDayTime ? 'd' : 'n';
+
+                // Get base icon from day's condition
+                if (day.weather?.[0]?.main) {
+                    const baseIconMap = {
+                        /* same mapping as above */
+                    };
+                    const baseIconCode = baseIconMap[day.weather[0].main] || '03';
+                    iconCode = baseIconCode + timeSuffix;
+                    iconDesc = day.weather[0].description || 'Cloudy';
+                    condition = day.weather[0].main;
+                } else {
+                    // Fallback for mock data structure
+                    iconCode = (day.icon || '03d').replace(/[dn]$/, timeSuffix);
+                    iconDesc = day.description || 'Cloudy';
+                    condition = day.condition || 'Clouds';
                 }
-
-                forecastDays.forEach((day, index) => {
-                    const forecastItem = this._createForecastItem(day, index, units);
-                    this.elements.forecastContainer.appendChild(forecastItem);
-                });
             } else {
-                console.warn('[WeatherRenderer] No valid forecast data provided');
-                this.elements.forecastContainer.innerHTML = `
-          <div class="forecast-empty" role="alert">
-            <p>Forecast data unavailable</p>
-          </div>
-        `;
-            }
-        } catch (error) {
-            console.error('[WeatherRenderer] Error rendering forecast:', error);
-            this.elements.forecastContainer.innerHTML = `
-        <div class="forecast-error" role="alert">
-          <p>Failed to load forecast</p>
-        </div>
-      `;
-        }
-    }
-
-    /**
-     * Create a forecast item element
-     * @private
-     * @param {Object} day - Daily forecast data
-     * @param {number} index - Day index
-     * @param {string} units - Temperature units
-     * @returns {HTMLElement} Forecast item element
-     */
-    _createForecastItem(day, index, units) {
-        const item = document.createElement('div');
-        item.setAttribute('role', 'listitem');
-        item.className = 'forecast-item';
-        item.setAttribute('aria-label', `Forecast for ${index === 0 ? 'today' : 'tomorrow'}`);
-
-        try {
-            const date = new Date((day.dt || 0) * 1000);
-            const dayName = index === 0 ? 'Today' : date.toLocaleDateString(undefined, { weekday: 'short' });
-
-            const tempMin = formatTemperature(day.temp?.min, units);
-            const tempMax = formatTemperature(day.temp?.max, units);
-            const weather = day.weather?.[0];
-
-            item.innerHTML = `
-        <div class="forecast-day" aria-label="${dayName}">${dayName}</div>
-        <div class="forecast-icon" aria-hidden="true">
-          ${weather ? getWeatherIcon(weather.main) : '<div class="icon-placeholder"></div>'}
-        </div>
-        <div class="forecast-temp">
-          <span class="temp-max" aria-label="High temperature">${tempMax}°</span>
-          <span class="temp-min" aria-label="Low temperature">${tempMin}°</span>
-        </div>
-      `;
-        } catch (error) {
-            console.error('[WeatherRenderer] Error creating forecast item:', error);
-            item.innerHTML = `
-        <div class="forecast-day">Day ${index + 1}</div>
-        <div class="forecast-icon">
-          <div class="icon-placeholder"></div>
-        </div>
-        <div class="forecast-temp">
-          <span class="temp-max">--°</span>
-          <span class="temp-min">--°</span>
-        </div>
-      `;
-        }
-
-        return item;
-    }
-
-    /**
-     * Render favorites list with safety checks
-     * Handles empty states and invalid data gracefully
-     * @param {Array} favorites - Array of favorite locations
-     */
-    renderFavorites(favorites) {
-        if (!this.elements.favoritesList) return;
-
-        try {
-            // Ensure we always work with an array
-            const favoritesArray = Array.isArray(favorites) ? favorites : [];
-
-            // Clear existing favorites
-            this.elements.favoritesList.innerHTML = '';
-
-            // Handle empty state
-            if (favoritesArray.length === 0) {
-                this.elements.favoritesList.innerHTML = `
-                <p class="favorites-empty" role="status">
-                    No favorites yet. Search for a location and press Ctrl+D to add it!
-                </p>
-            `;
-                return;
-            }
-
-            // Create favorite items
-            favoritesArray.forEach((favorite, index) => {
-                const favoriteItem = this._createFavoriteItem(favorite, index);
-                this.elements.favoritesList.appendChild(favoriteItem);
-            });
-
-            // Announce update to screen readers
-            if (favoritesArray.length > 0) {
-                a11yAnnounce(`${favoritesArray.length} favorite locations loaded`);
-            }
-        } catch (error) {
-            console.error('[WeatherRenderer] Error rendering favorites:', error);
-            this.elements.favoritesList.innerHTML = `
-            <p class="favorites-error" role="alert">
-                Failed to load favorites
-            </p>
-        `;
-        }
-    }
-
-    /**
-     * Create a favorite item element
-     * @private
-     * @param {Object} favorite - Favorite location
-     * @param {number} index - Item index
-     * @returns {HTMLElement} Favorite item element
-     */
-    _createFavoriteItem(favorite, index) {
-        const item = document.createElement('div');
-        item.className = 'favorite-item';
-        item.setAttribute('role', 'button');
-        item.setAttribute('tabindex', '0');
-        item.setAttribute('aria-label', `View weather for ${favorite.name}`);
-        item.setAttribute('data-index', index);
-
-        // Add keyboard support
-        item.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                item.click();
+                // FUTURE DAYS: Always use DAY icons (standard practice)
+                if (day.weather?.[0]?.icon) {
+                    iconCode = day.weather[0].icon;
+                    iconDesc = day.weather[0].description || 'Cloudy';
+                    condition = day.weather[0].main || 'Clouds';
+                } else {
+                    iconCode = day.icon || this._getIconCodeFromCondition(day.condition || 'Clouds');
+                    iconDesc = day.description || 'Cloudy';
+                    condition = day.condition || 'Clouds';
+                }
             }
         });
 
-        const locationText = favorite.state
-            ? `${favorite.name}, ${favorite.state}, ${favorite.country}`
-            : `${favorite.name}, ${favorite.country}`;
+        console.log('[WeatherRenderer] ✅ Forecast rendering complete');
+    }
+    /**
+     * Get icon code from weather condition main string (fallback mapping)
+     * @private
+     * @param {string} condition - Weather condition main (e.g., 'Clear', 'Clouds')
+     * @returns {string} Icon code (e.g., '01d', '03d')
+     */
+    _getIconCodeFromCondition(condition) {
+        const conditionMap = {
+            Clear: '01d',
+            Clouds: '03d',
+            Rain: '10d',
+            Drizzle: '09d',
+            Thunderstorm: '11d',
+            Snow: '13d',
+            Mist: '50d',
+            Smoke: '50d',
+            Haze: '50d',
+            Dust: '50d',
+            Fog: '50d',
+            Sand: '50d',
+            Ash: '50d',
+            Squall: '50d',
+            Tornado: '50d',
+        };
+        return conditionMap[condition] || '03d';
+    }
 
-        item.innerHTML = `
-      <div class="favorite-item-content">
-        <svg class="favorite-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" 
-                fill="none" 
-                stroke="currentColor" 
-                stroke-width="2" 
-                stroke-linecap="round" 
-                stroke-linejoin="round" />
-        </svg>
-        <span class="favorite-location">${this._escapeHtml(locationText)}</span>
-      </div>
-      <button class="favorite-remove" type="button" aria-label="Remove ${favorite.name} from favorites">
-        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" 
-                fill="none" 
-                stroke="currentColor" 
-                stroke-width="2" 
-                stroke-linecap="round"/>
-        </svg>
-      </button>
-    `;
+    /**
+     * Get day name (Today, Tomorrow, Mon, Tue, etc.)
+     * @private
+     * @param {number} index - Day index (0 = today)
+     * @returns {string} Formatted day name
+     */
+    _getDayName(index) {
+        const days = ['Today', 'Tomorrow', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const today = new Date().getDay();
+        return index < 2 ? days[index] : days[((today + index - 1) % 7) + 2];
+    }
 
-        return item;
+    /**
+     * Format temperature with unit symbol
+     * @private
+     * @param {number} temp - Temperature value
+     * @param {string} units - Units ('metric' or 'imperial')
+     * @returns {string} Formatted temperature
+     */
+    _formatTemperature(temp, units) {
+        if (temp == null) return '--';
+        return units === 'metric' ? `${Math.round(temp)}°C` : `${Math.round(temp)}°F`;
     }
 
     /**
@@ -461,7 +453,7 @@ export class WeatherRenderer {
             this.elements.temperatureUnit.textContent = units === 'metric' ? '°C' : '°F';
         }
 
-        // ✅ CRITICAL FIX: Update unit toggle button with SVG icons
+        // Update unit toggle button with SVG icons
         const unitToggle = document.getElementById('unit-toggle');
         if (!unitToggle) return;
 

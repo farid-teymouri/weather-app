@@ -5,7 +5,7 @@
  */
 export class LoadingSpinner {
     constructor() {
-        // ✅ DO NOT cache element reference - query on demand
+        // DO NOT cache element reference - query on demand
         this.selector = '.loading-spinner';
     }
 

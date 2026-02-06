@@ -9,7 +9,7 @@ export default defineConfig({
     build: {
         outDir: 'dist',
         assetsDir: 'assets',
-        // ✅ CRITICAL: MUST point to public/index.html
+        //  MUST point to public/index.html
         rollupOptions: {
             input: {
                 main: resolve(__dirname, 'public/index.html'), // Process this file

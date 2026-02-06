@@ -10,19 +10,19 @@
  * @returns {string} Sanitized HTML
  */
 export function sanitizeHtml(html) {
-  if (typeof html !== "string") {
-    return "";
-  }
+    if (typeof html !== 'string') {
+        return '';
+    }
 
-  // Remove script tags and event handlers
-  return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "")
-    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, "")
-    .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, "")
-    .replace(/javascript:/gi, "")
-    .replace(/on\w+=/gi, "")
-    .replace(/<\w+\s+[^>]*on\w+\s*=\s*["'][^"']*["']/gi, "");
+    // Remove script tags and event handlers
+    return html
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+        .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+        .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
+        .replace(/javascript:/gi, '')
+        .replace(/on\w+=/gi, '')
+        .replace(/<\w+\s+[^>]*on\w+\s*=\s*["'][^"']*["']/gi, '');
 }
 
 /**
@@ -31,15 +31,15 @@ export function sanitizeHtml(html) {
  * @returns {string} Sanitized string
  */
 export function sanitizeString(str) {
-  if (typeof str !== "string") {
-    return "";
-  }
+    if (typeof str !== 'string') {
+        return '';
+    }
 
-  return str
-    .trim()
-    .replace(/[<>\"'`]/g, "") // Remove dangerous characters
-    .replace(/\s+/g, " ") // Normalize whitespace
-    .substring(0, 200); // Limit length
+    return str
+        .trim()
+        .replace(/[<>\"'`]/g, '') // Remove dangerous characters
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .substring(0, 200); // Limit length
 }
 
 /**
@@ -48,12 +48,12 @@ export function sanitizeString(str) {
  * @returns {boolean} True if valid
  */
 export function isValidLatitude(lat) {
-  if (typeof lat !== "number" && typeof lat !== "string") {
-    return false;
-  }
+    if (typeof lat !== 'number' && typeof lat !== 'string') {
+        return false;
+    }
 
-  const value = parseFloat(lat);
-  return !isNaN(value) && value >= -90 && value <= 90;
+    const value = parseFloat(lat);
+    return !isNaN(value) && value >= -90 && value <= 90;
 }
 
 /**
@@ -62,12 +62,12 @@ export function isValidLatitude(lat) {
  * @returns {boolean} True if valid
  */
 export function isValidLongitude(lon) {
-  if (typeof lon !== "number" && typeof lon !== "string") {
-    return false;
-  }
+    if (typeof lon !== 'number' && typeof lon !== 'string') {
+        return false;
+    }
 
-  const value = parseFloat(lon);
-  return !isNaN(value) && value >= -180 && value <= 180;
+    const value = parseFloat(lon);
+    return !isNaN(value) && value >= -180 && value <= 180;
 }
 
 /**
@@ -77,7 +77,7 @@ export function isValidLongitude(lon) {
  * @returns {boolean} True if valid
  */
 export function isValidCoordinates(lat, lon) {
-  return isValidLatitude(lat) && isValidLongitude(lon);
+    return isValidLatitude(lat) && isValidLongitude(lon);
 }
 
 /**
@@ -86,7 +86,7 @@ export function isValidCoordinates(lat, lon) {
  * @returns {boolean} True if valid
  */
 export function isValidUnits(units) {
-  return units === "metric" || units === "imperial";
+    return units === 'metric' || units === 'imperial';
 }
 
 /**
@@ -95,15 +95,11 @@ export function isValidUnits(units) {
  * @returns {boolean} True if valid
  */
 export function isValidLocation(location) {
-  if (!location || typeof location !== "object") {
-    return false;
-  }
+    if (!location || typeof location !== 'object') {
+        return false;
+    }
 
-  return (
-    typeof location.name === "string" &&
-    isValidLatitude(location.lat) &&
-    isValidLongitude(location.lon)
-  );
+    return typeof location.name === 'string' && isValidLatitude(location.lat) && isValidLongitude(location.lon);
 }
 
 /**
@@ -112,15 +108,11 @@ export function isValidLocation(location) {
  * @returns {boolean} True if valid
  */
 export function isValidWeatherData(data) {
-  if (!data || typeof data !== "object") {
-    return false;
-  }
+    if (!data || typeof data !== 'object') {
+        return false;
+    }
 
-  return (
-    typeof data.name === "string" &&
-    data.main &&
-    typeof data.main.temp === "number"
-  );
+    return typeof data.name === 'string' && data.main && typeof data.main.temp === 'number';
 }
 
 /**
@@ -129,78 +121,78 @@ export function isValidWeatherData(data) {
  * @returns {Object} Sanitized data
  */
 export function sanitizeWeatherData(data) {
-  if (!data || typeof data !== "object") {
-    return {};
-  }
+    if (!data || typeof data !== 'object') {
+        return {};
+    }
 
-  const sanitized = {};
+    const sanitized = {};
 
-  // Sanitize string fields
-  if (data.name) {
-    sanitized.name = sanitizeString(data.name);
-  }
+    // Sanitize string fields
+    if (data.name) {
+        sanitized.name = sanitizeString(data.name);
+    }
 
-  if (data.weather && Array.isArray(data.weather)) {
-    sanitized.weather = data.weather.map((item) => ({
-      id: item.id,
-      main: sanitizeString(item.main),
-      description: sanitizeString(item.description),
-      icon: sanitizeString(item.icon),
-    }));
-  }
+    if (data.weather && Array.isArray(data.weather)) {
+        sanitized.weather = data.weather.map((item) => ({
+            id: item.id,
+            main: sanitizeString(item.main),
+            description: sanitizeString(item.description),
+            icon: sanitizeString(item.icon),
+        }));
+    }
 
-  // Copy numeric fields directly
-  if (data.main) {
-    sanitized.main = {
-      temp: data.main.temp,
-      feels_like: data.main.feels_like,
-      temp_min: data.main.temp_min,
-      temp_max: data.main.temp_max,
-      pressure: data.main.pressure,
-      humidity: data.main.humidity,
-    };
-  }
+    // Copy numeric fields directly
+    if (data.main) {
+        sanitized.main = {
+            temp: data.main.temp,
+            feels_like: data.main.feels_like,
+            temp_min: data.main.temp_min,
+            temp_max: data.main.temp_max,
+            pressure: data.main.pressure,
+            humidity: data.main.humidity,
+        };
+    }
 
-  if (data.wind) {
-    sanitized.wind = {
-      speed: data.wind.speed,
-      deg: data.wind.deg,
-    };
-  }
+    if (data.wind) {
+        sanitized.wind = {
+            speed: data.wind.speed,
+            deg: data.wind.deg,
+        };
+    }
 
-  if (data.clouds) {
-    sanitized.clouds = {
-      all: data.clouds.all,
-    };
-  }
+    if (data.clouds) {
+        sanitized.clouds = {
+            all: data.clouds.all,
+        };
+    }
 
-  if (data.dt) {
-    sanitized.dt = data.dt;
-  }
+    if (data.dt) {
+        sanitized.dt = data.dt;
+    }
 
-  if (data.sys) {
-    sanitized.sys = {
-      type: data.sys.type,
-      id: data.sys.id,
-      country: sanitizeString(data.sys.country),
-      sunrise: data.sys.sunrise,
-      sunset: data.sys.sunset,
-    };
-  }
+    if (data.sys) {
+        sanitized.sys = {
+            type: data.sys.type,
+            id: data.sys.id,
+            country: sanitizeString(data.sys.country),
+            sunrise: data.sys.sunrise,
+            sunset: data.sys.sunset,
+        };
+    }
 
-  if (data.timezone) {
-    sanitized.timezone = data.timezone;
-  }
+    if (data.timezone) {
+        sanitized.timezone = data.timezone;
+    }
 
-  if (data.id) {
-    sanitized.id = data.id;
-  }
+    if (data.id) {
+        sanitized.id = data.id;
+    }
 
-  if (data.cod) {
-    sanitized.cod = data.cod;
-  }
+    if (data.cod) {
+        sanitized.cod = data.cod;
+    }
 
-  return sanitized;
+    return sanitized;
 }
 
 /**
@@ -209,12 +201,12 @@ export function sanitizeWeatherData(data) {
  * @returns {boolean} True if valid
  */
 export function isValidSearchQuery(query) {
-  if (typeof query !== "string") {
-    return false;
-  }
+    if (typeof query !== 'string') {
+        return false;
+    }
 
-  const sanitized = sanitizeString(query);
-  return sanitized.length >= 2 && sanitized.length <= 100;
+    const sanitized = sanitizeString(query);
+    return sanitized.length >= 2 && sanitized.length <= 100;
 }
 
 /**
@@ -223,11 +215,11 @@ export function isValidSearchQuery(query) {
  * @returns {string} Sanitized query
  */
 export function sanitizeSearchQuery(query) {
-  if (typeof query !== "string") {
-    return "";
-  }
+    if (typeof query !== 'string') {
+        return '';
+    }
 
-  return sanitizeString(query);
+    return sanitizeString(query);
 }
 
 /**
@@ -236,18 +228,18 @@ export function sanitizeSearchQuery(query) {
  * @returns {boolean} True if valid
  */
 export function isValidFavorite(favorite) {
-  if (!favorite || typeof favorite !== "object") {
-    return false;
-  }
+    if (!favorite || typeof favorite !== 'object') {
+        return false;
+    }
 
-  return (
-    typeof favorite.name === "string" &&
-    favorite.name.length > 0 &&
-    isValidLatitude(favorite.lat) &&
-    isValidLongitude(favorite.lon) &&
-    (!favorite.state || typeof favorite.state === "string") &&
-    (!favorite.country || typeof favorite.country === "string")
-  );
+    return (
+        typeof favorite.name === 'string' &&
+        favorite.name.length > 0 &&
+        isValidLatitude(favorite.lat) &&
+        isValidLongitude(favorite.lon) &&
+        (!favorite.state || typeof favorite.state === 'string') &&
+        (!favorite.country || typeof favorite.country === 'string')
+    );
 }
 
 /**
@@ -256,24 +248,24 @@ export function isValidFavorite(favorite) {
  * @returns {Object} Sanitized favorite
  */
 export function sanitizeFavorite(favorite) {
-  if (!favorite || typeof favorite !== "object") {
-    return null;
-  }
+    if (!favorite || typeof favorite !== 'object') {
+        return null;
+    }
 
-  const sanitized = {
-    name: sanitizeString(favorite.name),
-    lat: parseFloat(favorite.lat),
-    lon: parseFloat(favorite.lon),
-    state: favorite.state ? sanitizeString(favorite.state) : "",
-    country: favorite.country ? sanitizeString(favorite.country) : "",
-    timestamp: favorite.timestamp || Date.now(),
-  };
+    const sanitized = {
+        name: sanitizeString(favorite.name),
+        lat: parseFloat(favorite.lat),
+        lon: parseFloat(favorite.lon),
+        state: favorite.state ? sanitizeString(favorite.state) : '',
+        country: favorite.country ? sanitizeString(favorite.country) : '',
+        timestamp: favorite.timestamp || Date.now(),
+    };
 
-  if (!isValidFavorite(sanitized)) {
-    return null;
-  }
+    if (!isValidFavorite(sanitized)) {
+        return null;
+    }
 
-  return sanitized;
+    return sanitized;
 }
 
 /**
@@ -282,7 +274,7 @@ export function sanitizeFavorite(favorite) {
  * @returns {boolean} True if valid array
  */
 export function isValidArray(arr) {
-  return Array.isArray(arr) && arr.length > 0;
+    return Array.isArray(arr) && arr.length > 0;
 }
 
 /**
@@ -291,14 +283,14 @@ export function isValidArray(arr) {
  * @returns {Array} Sanitized array
  */
 export function sanitizeLocations(locations) {
-  if (!isValidArray(locations)) {
-    return [];
-  }
+    if (!isValidArray(locations)) {
+        return [];
+    }
 
-  return locations
-    .map((loc) => sanitizeFavorite(loc))
-    .filter((loc) => loc !== null)
-    .slice(0, 50); // Limit to 50 results
+    return locations
+        .map((loc) => sanitizeFavorite(loc))
+        .filter((loc) => loc !== null)
+        .slice(0, 50); // Limit to 50 results
 }
 
 /**
@@ -307,12 +299,12 @@ export function sanitizeLocations(locations) {
  * @returns {boolean} True if valid
  */
 export function isValidUrl(url) {
-  try {
-    new URL(url);
-    return true;
-  } catch (e) {
-    return false;
-  }
+    try {
+        new URL(url);
+        return true;
+    } catch (e) {
+        return false;
+    }
 }
 
 /**
@@ -321,21 +313,21 @@ export function isValidUrl(url) {
  * @returns {string} Sanitized URL
  */
 export function sanitizeUrl(url) {
-  if (typeof url !== "string") {
-    return "";
-  }
+    if (typeof url !== 'string') {
+        return '';
+    }
 
-  // Remove javascript: and other dangerous protocols
-  const trimmed = url.trim().toLowerCase();
-  if (trimmed.startsWith("javascript:") || trimmed.startsWith("data:")) {
-    return "";
-  }
+    // Remove javascript: and other dangerous protocols
+    const trimmed = url.trim().toLowerCase();
+    if (trimmed.startsWith('javascript:') || trimmed.startsWith('data:')) {
+        return '';
+    }
 
-  try {
-    return new URL(url).toString();
-  } catch (e) {
-    return "";
-  }
+    try {
+        return new URL(url).toString();
+    } catch (e) {
+        return '';
+    }
 }
 
 /**
@@ -344,12 +336,12 @@ export function sanitizeUrl(url) {
  * @returns {boolean} True if valid
  */
 export function isValidEmail(email) {
-  if (typeof email !== "string") {
-    return false;
-  }
+    if (typeof email !== 'string') {
+        return false;
+    }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
 }
 
 /**
@@ -358,16 +350,16 @@ export function isValidEmail(email) {
  * @returns {string} Escaped string
  */
 export function escapeHtml(str) {
-  if (typeof str !== "string") {
-    return "";
-  }
+    if (typeof str !== 'string') {
+        return '';
+    }
 
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 /**
@@ -376,16 +368,16 @@ export function escapeHtml(str) {
  * @returns {string} Unescaped string
  */
 export function unescapeHtml(str) {
-  if (typeof str !== "string") {
-    return "";
-  }
+    if (typeof str !== 'string') {
+        return '';
+    }
 
-  return str
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'");
+    return str
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#039;/g, "'");
 }
 
 /**
@@ -394,12 +386,12 @@ export function unescapeHtml(str) {
  * @returns {boolean} True if valid
  */
 export function isValidJson(jsonString) {
-  try {
-    JSON.parse(jsonString);
-    return true;
-  } catch (e) {
-    return false;
-  }
+    try {
+        JSON.parse(jsonString);
+        return true;
+    } catch (e) {
+        return false;
+    }
 }
 
 /**
@@ -408,15 +400,15 @@ export function isValidJson(jsonString) {
  * @returns {Object|null} Parsed object or null
  */
 export function sanitizeJson(jsonString) {
-  if (!isValidJson(jsonString)) {
-    return null;
-  }
+    if (!isValidJson(jsonString)) {
+        return null;
+    }
 
-  try {
-    return JSON.parse(jsonString);
-  } catch (e) {
-    return null;
-  }
+    try {
+        return JSON.parse(jsonString);
+    } catch (e) {
+        return null;
+    }
 }
 
 /**
@@ -425,12 +417,12 @@ export function sanitizeJson(jsonString) {
  * @returns {boolean} True if valid
  */
 export function isValidColor(color) {
-  if (typeof color !== "string") {
-    return false;
-  }
+    if (typeof color !== 'string') {
+        return false;
+    }
 
-  const hexRegex = /^#([0-9A-F]{3}){1,2}$/i;
-  return hexRegex.test(color);
+    const hexRegex = /^#([0-9A-F]{3}){1,2}$/i;
+    return hexRegex.test(color);
 }
 
 /**
@@ -439,11 +431,10 @@ export function isValidColor(color) {
  * @returns {boolean} True if valid
  */
 export function isValidPhone(phone) {
-  if (typeof phone !== "string") {
-    return false;
-  }
+    if (typeof phone !== 'string') {
+        return false;
+    }
 
-  const phoneRegex =
-    /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/;
-  return phoneRegex.test(phone);
+    const phoneRegex = /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/;
+    return phoneRegex.test(phone);
 }

@@ -106,8 +106,8 @@
         </style>
 
         <title>WeatherFlow - Professional Weather Application</title>
-        <script type="module" crossorigin src="/assets/main.DPK0pNPH.js"></script>
-        <link rel="stylesheet" crossorigin href="/assets/main.51kSM4X7.css" />
+      <script type="module" crossorigin src="/assets/main.BvQn8IJb.js"></script>
+      <link rel="stylesheet" crossorigin href="/assets/main.B9lWTIGu.css">
     </head>
     <body>
         <div id="app" class="app-container">
@@ -142,28 +142,12 @@
                                 aria-label="Search for a location"
                                 autocomplete="off"
                             />
-                            <!-- ✅ CRITICAL: STATIC CONTAINER (never removed by JS) -->
+                            <!--  STATIC CONTAINER (never removed by JS) -->
                             <div
                                 id="search-autocomplete"
                                 class="search-autocomplete"
                                 role="region"
                                 aria-live="polite"
-                                style="
-                                    position: absolute !important;
-                                    top: 100% !important;
-                                    left: 0 !important;
-                                    right: 0 !important;
-                                    background: white !important;
-                                    border: 1px solid #ddd !important;
-                                    border-radius: 8px !important;
-                                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
-                                    margin-top: 8px !important;
-                                    z-index: 1000 !important;
-                                    display: none !important;
-                                    max-height: 320px !important;
-                                    overflow-y: auto !important;
-                                    padding: 4px 0 !important;
-                                "
                             ></div>
                             <button
                                 id="search-clear"
@@ -262,29 +246,34 @@
 
                         <!-- Weather Icon -->
                         <div class="weather-icon-container">
-                            <svg class="weather-icon skeleton" viewBox="0 0 100 100" aria-hidden="true">
-                                <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="4" />
-                            </svg>
-                            <p class="weather-condition skeleton" aria-label="Loading condition">Loading...</p>
+                            <img
+                                src="/icons/weather-icons/03d.svg"
+                                alt="Cloudy"
+                                class="weather-icon main-weather-icon"
+                                loading="lazy"
+                                onerror="this.src = '/icons/weather-icons/03d.svg'"
+                                aria-hidden="true"
+                            />
+                            <p class="weather-condition" aria-label="Weather condition: Cloudy">Cloudy</p>
                         </div>
 
                         <!-- Weather Details -->
-                        <div class="weather-details">
-                            <div class="detail-item">
-                                <span class="detail-label">Feels Like:</span>
-                                <span class="detail-value skeleton">--°</span>
-                            </div>
+                        <div class="weather-details" aria-busy="true">
                             <div class="detail-item">
                                 <span class="detail-label">Humidity:</span>
-                                <span class="detail-value skeleton">--%</span>
+                                <span class="detail-value humidity-value skeleton">--</span>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Wind:</span>
-                                <span class="detail-value skeleton">-- m/s</span>
+                                <span class="detail-value wind-value skeleton">--</span>
                             </div>
                             <div class="detail-item">
                                 <span class="detail-label">Pressure:</span>
-                                <span class="detail-value skeleton">-- hPa</span>
+                                <span class="detail-value pressure-value skeleton">--</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Visibility:</span>
+                                <span class="detail-value visibility-value skeleton">--</span>
                             </div>
                         </div>
                     </div>
@@ -313,28 +302,6 @@
                         </div>
                     </div>
                 </section>
-
-                <!-- Favorites Section -->
-                <section id="favorites" class="weather-section" aria-labelledby="favorites-title">
-                    <div class="favorites-header">
-                        <h2 id="favorites-title" class="section-title">Favorites</h2>
-                        <button
-                            id="favorites-toggle"
-                            class="btn btn-icon"
-                            aria-label="Toggle favorites panel"
-                            aria-expanded="true"
-                        >
-                            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M7 10l5 5 5-5z" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    <div id="favorites-list" class="favorites-list" role="list">
-                        <!-- Favorites will be dynamically inserted here -->
-                        <p class="favorites-empty skeleton">Loading favorites...</p>
-                    </div>
-                </section>
             </main>
 
             <!-- Toast Notifications -->
@@ -348,23 +315,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Service Worker Registration -->
-        <!-- <script>
-            // Register service worker for PWA functionality
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker
-                        .register('./service-worker.js')
-                        .then((registration) => {
-                            console.log('ServiceWorker registered:', registration.scope);
-                        })
-                        .catch((error) => {
-                            console.error('ServiceWorker registration failed:', error);
-                        });
-                });
-            }
-        </script> -->
         <div
             style="
                 position: fixed;

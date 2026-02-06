@@ -33,7 +33,7 @@ export class GeolocationManager {
         // Default options with INCREASED timeout for reliability
         const geolocationOptions = {
             enableHighAccuracy: true,
-            timeout: 15000, // ✅ Increased from 10s to 15s for better reliability
+            timeout: 15000, // Increased from 10s to 15s for better reliability
             maximumAge: 300000, // 5 minutes cache
             ...options,
         };
@@ -58,7 +58,7 @@ export class GeolocationManager {
         } catch (error) {
             console.error('[GeolocationManager] Position error:', error);
 
-            // ✅ Provide user-friendly error messages
+            // Provide user-friendly error messages
             if (error.code === 1 || error.message.includes('denied')) {
                 throw new Error('Location access denied. Please allow location permission.');
             } else if (error.code === 2 || error.message.includes('unavailable')) {

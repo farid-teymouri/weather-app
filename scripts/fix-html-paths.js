@@ -73,7 +73,40 @@ try {
 } catch (err) {
     console.warn(`⚠️  Warning: Could not remove dist/public: ${err.message}`);
 }
+// Copy weather icons from src to dist (required for Vercel)
+const weatherIconsSrc = join(rootDir, 'src', 'assets', 'icons', 'weather');
+const weatherIconsDest = join(distDir, 'icons', 'weather-icons');
 
+try {
+    if (existsSync(weatherIconsSrc)) {
+        // Create destination directory if needed
+        if (!existsSync(join(distDir, 'icons'))) {
+            mkdirSync(join(distDir, 'icons'), { recursive: true });
+        }
+
+        // Copy ALL weather icon SVGs
+        cpSync(weatherIconsSrc, weatherIconsDest, { recursive: true });
+        console.log('✅ Copied weather icons to dist/icons/weather-icons/');
+
+        // Verify critical icons exist
+        const criticalIcons = ['01d.svg', '02d.svg', '03d.svg', '04d.svg', '10d.svg', '13d.svg'];
+        const missingIcons = criticalIcons.filter((icon) => !existsSync(join(weatherIconsDest, icon)));
+
+        if (missingIcons.length > 0) {
+            console.warn('⚠️  WARNING: Missing critical weather icons:', missingIcons.join(', '));
+            console.warn('   Forecast icons may not display correctly');
+        } else {
+            console.log('✅ All critical weather icons verified in dist/');
+        }
+    } else {
+        console.error('❌ CRITICAL ERROR: Weather icons not found at:', weatherIconsSrc);
+        console.error('   Please ensure src/assets/icons/weather/ contains SVG files');
+        process.exit(1);
+    }
+} catch (err) {
+    console.error('❌ ERROR copying weather icons:', err.message);
+    process.exit(1);
+}
 // Verification: Check critical files exist in dist/
 const criticalFiles = ['index.html', 'manifest.json', 'service-worker.js', 'icons/icon-192.svg', 'icons/icon-512.svg'];
 

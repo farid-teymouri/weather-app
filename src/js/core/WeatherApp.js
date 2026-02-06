@@ -11,7 +11,6 @@ import { StorageManager } from './StorageManager.js';
 import { ThemeManager } from './ThemeManager.js';
 import { WeatherRenderer } from '../ui/WeatherRenderer.js';
 import { SearchManager } from '../ui/SearchManager.js';
-import { FavoritesManager } from '../ui/FavoritesManager.js';
 import { Toast } from '../ui/Toast.js';
 import { LoadingSpinner } from '../ui/LoadingSpinner.js';
 import { a11yAnnounce } from '../utils/a11y.js';
@@ -39,7 +38,6 @@ export class WeatherApp {
         // Initialize UI components
         this.renderer = null;
         this.searchManager = null;
-        this.favoritesManager = null;
         this.toast = null;
         this.loadingSpinner = null;
 
@@ -47,7 +45,6 @@ export class WeatherApp {
         this.state = {
             currentWeather: null,
             forecast: null,
-            favorites: [],
             //  FORCE CELSIUS IN DEVELOPMENT MODE (ignore saved preferences)
             units: this._isDevelopmentMode() ? 'metric' : this.storageManager.getUnits() || this.config.defaultUnits,
             isLoading: false,
@@ -69,9 +66,6 @@ export class WeatherApp {
         // Initialize UI components
         this._initUIComponents();
 
-        // Load saved favorites
-        this._loadFavorites();
-
         // Setup event listeners
         this._setupEventListeners();
 
@@ -89,7 +83,6 @@ export class WeatherApp {
     _initUIComponents() {
         this.renderer = new WeatherRenderer();
         this.searchManager = new SearchManager(this.weatherService);
-        this.favoritesManager = new FavoritesManager(this.storageManager);
         this.toast = new Toast();
         this.loadingSpinner = new LoadingSpinner();
     }
@@ -122,7 +115,6 @@ export class WeatherApp {
             console.log('[WeatherApp] Search result selected:', event.detail);
             this.getWeatherByLocation(event.detail);
         });
-
         document.addEventListener(
             'click',
             (e) => {
@@ -212,7 +204,7 @@ export class WeatherApp {
                     const lon = position.coords.longitude;
                     console.log(`[WeatherApp] Geolocation successful: ${lat}, ${lon}`);
 
-                    // ✅ CRITICAL FIX: PARALLEL REQUESTS - City name + Weather data SIMULTANEOUSLY
+                    //  PARALLEL REQUESTS - City name + Weather data SIMULTANEOUSLY
                     // Both requests start at the same time → Total time = max(time1, time2) not sum
                     try {
                         // Start BOTH requests in parallel (weather + reverse geocoding)
@@ -221,7 +213,7 @@ export class WeatherApp {
                             this.weatherService.getWeather({ lat, lon, units: this.state.units }), // Gets weather
                         ]);
 
-                        // ✅ OVERRIDE: Use reverse geocoded city name (never "Your Location")
+                        // Use reverse geocoded city name (never "Your Location")
                         weatherData.name = cityName;
 
                         // Get forecast data (sequential is fine - mock data is fast)
@@ -248,6 +240,7 @@ export class WeatherApp {
 
                     return; // Exit early - success path complete
                 }
+                this._initFavoriteButton(); // ✅ Initialize favorite button state
             } catch (geoError) {
                 console.warn('[WeatherApp] Geolocation failed:', geoError.message);
                 // Continue to fallback location
@@ -282,7 +275,7 @@ export class WeatherApp {
             // NEVER leave app stuck in loading state
             this._setLoading(false);
 
-            // ✅ CRITICAL FIX: Create error container SAFELY without HTML injection
+            //  Create error container SAFELY without HTML injection
             const errorContainer = document.createElement('div');
             errorContainer.className = 'error-container';
             errorContainer.setAttribute('role', 'alert');
@@ -323,13 +316,13 @@ export class WeatherApp {
         </div>
     `;
 
-            // ✅ CRITICAL: Replace weather card content SAFELY
+            // Replace weather card content SAFELY
             const weatherCard = document.querySelector('#current-weather .weather-card');
             if (weatherCard) {
                 weatherCard.innerHTML = ''; // Clear existing content
                 weatherCard.appendChild(errorContainer);
 
-                // ✅ CRITICAL FIX: Attach event listener AFTER DOM insertion with DELEGATION
+                // Attach event listener AFTER DOM insertion with DELEGATION
                 const retryBtn = errorContainer.querySelector('.btn-retry-tehran');
                 if (retryBtn) {
                     // Use once: true to prevent duplicate handlers
@@ -379,7 +372,7 @@ export class WeatherApp {
         } finally {
             this._setLoading(false);
 
-            // ✅ EMERGENCY FALLBACK: Force hide spinner after 100ms if still visible
+            //  Force hide spinner after 100ms if still visible
             setTimeout(() => {
                 if (this.loadingSpinner && this.loadingSpinner.isVisible?.()) {
                     console.warn('[WeatherApp] EMERGENCY: Forcing spinner hide after timeout');
@@ -411,7 +404,7 @@ export class WeatherApp {
         try {
             this._setLoading(true);
 
-            // ✅ CRITICAL FIX: Bypass geolocation in development mode
+            // Bypass geolocation in development mode
             if (this._isDevelopmentMode()) {
                 console.log('[WeatherApp] Development mode: Skipping geolocation, using default location');
                 await this.getWeatherByCoordinates(this.config.defaultLocation.lat, this.config.defaultLocation.lon);
@@ -431,7 +424,7 @@ export class WeatherApp {
         } catch (error) {
             console.error('[WeatherApp] Error getting current location:', error);
 
-            // ✅ Fallback to default location on ANY error (including timeout)
+            //  Fallback to default location on ANY error (including timeout)
             this.toast.showError('⚠️ Location access failed. Using default location.');
 
             try {
@@ -594,23 +587,6 @@ export class WeatherApp {
     }
 
     /**
-     * Load favorites from storage with safety check
-     * @private
-     */
-    _loadFavorites() {
-        try {
-            // Ensure we always have an array
-            const rawFavorites = this.favoritesManager.getFavorites();
-            this.state.favorites = Array.isArray(rawFavorites) ? rawFavorites : [];
-            this.renderer.renderFavorites(this.state.favorites);
-        } catch (error) {
-            console.error('[WeatherApp] Error loading favorites:', error);
-            this.state.favorites = []; // Safe default
-            this.renderer.renderFavorites([]);
-        }
-    }
-
-    /**
      * Destroy application and cleanup
      */
     destroy() {
@@ -646,7 +622,7 @@ export class WeatherApp {
                 units: this.state.units,
             });
 
-            // ✅ CRITICAL FIX: Override API name with search result name
+            //  Override API name with search result name
             // This ensures UI shows exactly what user selected (Tokyo, Cairo, etc.)
             weatherData.name = location.name;
 
@@ -677,11 +653,6 @@ export class WeatherApp {
 
             // Show success message
             this.toast.showSuccess(`✅ Weather updated for ${location.name}`);
-
-            // Suggest adding to favorites if not already saved
-            if (!this._isFavorite(location)) {
-                this.toast.showInfo(`💡 Press Ctrl+D to save ${location.name} to favorites`);
-            }
         } catch (error) {
             console.error('[WeatherApp] Error loading location weather:', error);
             this.toast.showError('Failed to load weather for this location. Please try again.');
@@ -689,33 +660,40 @@ export class WeatherApp {
             this._setLoading(false);
         }
     }
-    /**
-     * Check if location is already in favorites
-     * @private
-     * @param {Object} location - Location to check
-     * @returns {boolean} True if location is favorited
-     */
-    _isFavorite(location) {
-        if (!location || !location.lat || !location.lon) {
-            return false;
-        }
-
-        return this.state.favorites.some((fav) => fav.lat === location.lat && fav.lon === location.lon);
-    }
 
     /**
-     * Reverse geocode coordinates to city name using OpenStreetMap Nominatim
-     * Integrated into initial loading flow with timeout protection
+     * Reverse geocode coordinates to city name with localStorage caching
+     * Caches results for 24 hours to avoid Nominatim rate limits and improve performance
      * @private
      * @param {number} lat - Latitude
      * @param {number} lon - Longitude
      * @returns {Promise<string>} City name or formatted coordinates fallback
      */
     async _reverseGeocode(lat, lon) {
+        //  Round to 4 decimals (11m precision) for cache efficiency
+        const cacheKey = `weather_geocode_${lat.toFixed(4)}_${lon.toFixed(4)}`;
+        const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+        // CHECK CACHE FIRST (avoids API call entirely on repeat visits)
         try {
-            // Timeout protection (3 seconds max)
+            const cached = localStorage.getItem(cacheKey);
+            if (cached) {
+                const { city, timestamp } = JSON.parse(cached);
+                if (Date.now() - timestamp < CACHE_DURATION) {
+                    console.log(
+                        `[WeatherApp] ✅ Using CACHED geocode: "${city}" for ${lat.toFixed(4)}, ${lon.toFixed(4)}`
+                    );
+                    return city;
+                }
+            }
+        } catch (error) {
+            console.warn('[WeatherApp] Cache read error (ignoring):', error.message);
+        }
+
+        // MAKE API REQUEST WITH ENHANCED TIMEOUT (5s instead of 3s)
+        try {
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // Increased to 5s
 
             const response = await fetch(
                 `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=en`,
@@ -735,8 +713,8 @@ export class WeatherApp {
             const data = await response.json();
             const address = data.address;
 
-            // Get most specific location name available
-            const cityName =
+            // EXTRACT BEST AVAILABLE LOCATION NAME
+            const rawName =
                 address.city ||
                 address.town ||
                 address.village ||
@@ -747,12 +725,44 @@ export class WeatherApp {
                 address.country ||
                 `Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`;
 
-            // Clean common suffixes for cleaner display
-            return cityName.replace(/ (Province|County|District|Region|State|Governorate)$/i, '').trim();
+            // CLEAN AND NORMALIZE NAME
+            const cityName = rawName
+                .replace(/ (Province|County|District|Region|State|Governorate|Oblast)$/i, '')
+                .replace(/(City|Town|Village)$/i, '')
+                .trim()
+                .replace(/\s+/g, ' ');
+
+            // CACHE SUCCESSFUL RESULT (24-hour expiry)
+            try {
+                localStorage.setItem(
+                    cacheKey,
+                    JSON.stringify({
+                        city: cityName,
+                        timestamp: Date.now(),
+                        source: 'nominatim',
+                    })
+                );
+                console.log(`[WeatherApp] 🗺️ Cached geocode: "${cityName}" for ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+            } catch (cacheError) {
+                console.warn('[WeatherApp] Cache write failed (ignoring):', cacheError.message);
+            }
+
+            return cityName;
         } catch (error) {
-            console.warn('[WeatherApp] Reverse geocoding failed or timed out:', error.message);
-            // Professional fallback: formatted coordinates
-            return `Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`;
+            // SMART FALLBACK: Use cached value if available, otherwise format coordinates
+            try {
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) {
+                    const { city } = JSON.parse(cached);
+                    console.warn(`[WeatherApp] ⚠️ Geocoding failed, using STALE CACHE: "${city}"`);
+                    return city;
+                }
+            } catch (e) {}
+
+            // Final fallback: formatted coordinates
+            const fallback = `Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`;
+            console.warn(`[WeatherApp] ❌ Geocoding failed completely. Using fallback: "${fallback}"`);
+            return fallback;
         }
     }
 }
