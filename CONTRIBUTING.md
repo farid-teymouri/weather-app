@@ -10,15 +10,15 @@ Thank you for your interest in contributing to WeatherFlow! This document provid
 - [Coding Standards](#coding-standards)
 - [Pull Request Process](#pull-request-process)
 - [Reporting Bugs](#reporting-bugs)
-- [Suggesting Features](#suggesting-features)
+- [Design Guidelines](#design-guidelines)
 
-## 🤝 Code of Conduct
+### 🤝 Code of Conduct
 
 This project and everyone participating in it is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
 
-## 🎯 How Can I Contribute?
+### 🎯 How Can I Contribute?
 
-### Reporting Bugs
+#### Reporting Bugs
 
 Before creating bug reports, please check the existing issues to avoid duplicates.
 
@@ -31,7 +31,7 @@ Before creating bug reports, please check the existing issues to avoid duplicate
 5. Mention your browser, OS, and device information
 6. Describe the behavior you observed and the behavior you expected
 
-### Suggesting Features
+#### Suggesting Features
 
 Feature requests are welcome! Please follow these guidelines:
 
@@ -41,17 +41,13 @@ Feature requests are welcome! Please follow these guidelines:
 4. Include examples or mockups if applicable
 5. Describe alternatives you've considered
 
-### Pull Requests
+### 🔧 Development Workflow
 
-We welcome pull requests! Here's how to contribute code:
-
-## 🔧 Development Workflow
-
-### 1. Fork the Repository
+#### 1. Fork the Repository
 
 Click the "Fork" button on the GitHub repository page.
 
-### 2. Clone Your Fork
+#### 2. Clone Your Fork
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/weather-app.git
@@ -135,9 +131,9 @@ git push origin feat/amazing-feature
     3. Fill out the PR template
     4. Submit your pull request
 
-## 💻 Coding Standards
+### 💻 Coding Standards
 
-### JavaScript
+#### JavaScript
 
 - Use ES6+ features
 - Follow the ESLint configuration (`.eslintrc.js`)
@@ -151,19 +147,39 @@ git push origin feat/amazing-feature
 **Example**:
 
 ```bash
-.weather-card {
-    padding: var(--spacing-lg);
-    background-color: var(--color-background);
-    border-radius: var(--border-radius-lg);
-}
-
-.weather-card__title {
-    font-size: var(--font-size-xl);
-    color: var(--color-text);
+/**
+ * Fetches weather data from the API
+ * @param {Object} params - Location parameters
+ * @returns {Promise<Object>} Weather data
+ */
+async function fetchWeather(params) {
+  const response = await fetch(`/api/weather?${new URLSearchParams(params)}`);
+  return response.json();
 }
 ```
 
-### HTML
+#### CSS
+
+- Use BEM methodology for class naming
+- Use CSS custom properties for theming
+- Use 2 spaces for indentation
+- Organize styles logically (base, components, layout, utilities)
+- Avoid !important unless absolutely necessary
+
+```bash
+.weather-card {
+  padding: var(--spacing-lg);
+  background-color: var(--color-background);
+  border-radius: var(--border-radius-lg);
+}
+
+.weather-card__title {
+  font-size: var(--font-size-xl);
+  color: var(--color-text);
+}
+```
+
+#### HTML
 
 - Use semantic HTML5 elements
 - Add proper ARIA attributes for accessibility
@@ -181,7 +197,7 @@ git push origin feat/amazing-feature
 </article>
 ```
 
-### Git Commit Messages
+#### Git Commit Messages
 
 **Follow these guidelines**:
 
@@ -199,7 +215,7 @@ git push origin feat/amazing-feature
 - `test`: - Adding or updating tests
 - `chore`: - Maintenance tasks
 
-## 📝 Pull Request Process
+#### 📝 Pull Request Process
 
 1. Update Documentation: Ensure README.md and relevant documentation is updated
 2. Add Tests: Include tests for new functionality
@@ -209,7 +225,7 @@ git push origin feat/amazing-feature
 6. Security Review: Verify no security vulnerabilities introduced
 7. Code Review: Be prepared to make changes based on feedback
 
-## 🐛 Reporting Bugs
+#### 🐛 Reporting Bugs
 
 1. When reporting bugs, please include:
 2. Clear Title: Summarize the issue
@@ -220,9 +236,9 @@ git push origin feat/amazing-feature
 7. Environment: Browser, OS, device information
 8. Console Errors: Any error messages from browser console
 
-## 💡 Suggesting Features
+### 💡 Suggesting Features
 
-### When suggesting features:
+#### When suggesting features:
 
 1. Clear Title: Describe the feature
 2. Detailed Description: Explain what it does
@@ -230,9 +246,9 @@ git push origin feat/amazing-feature
 4. Examples: Mockups or examples
 5. Alternatives: Other approaches considered
 
-## 🎨 Design Guidelines
+### 🎨 Design Guidelines
 
-### Accessibility
+#### Accessibility
 
 - Maintain WCAG 2.1 AA compliance
 - Ensure keyboard navigation works
@@ -240,7 +256,7 @@ git push origin feat/amazing-feature
 - Test with screen readers
 - Support high contrast mode
 
-### Performance
+#### Performance
 
 - Optimize images and assets
 - Minimize bundle size
@@ -248,7 +264,7 @@ git push origin feat/amazing-feature
 - Use efficient algorithms
 - Avoid unnecessary re-renders
 
-### Security
+#### Security
 
 - Never expose API keys
 - Sanitize all user inputs
@@ -256,7 +272,7 @@ git push origin feat/amazing-feature
 - Use HTTPS
 - Implement CSP headers
 
-## 📚 Resources
+### 📚 Resources
 
 - <a href="https://openweathermap.org" target="_blank"> OpenWeatherMap API Docs</a>
 - <a href="https://www.w3.org/WAI/WCAG21/quickref" target="_blank">WCAG 2.1 Guidelines</a>
@@ -264,7 +280,7 @@ git push origin feat/amazing-feature
 - <a href="https://google.github.io/styleguide/jsguide.html" target="_blank">JavaScript Style Guide</a>
 - <a href="https://css-tricks.com/css-architecture-and-design-systems" target="_blank">CSS Architecture</a>
 
-## 🙏 Thank You!
+### 🙏 Thank You!
 
 Your contributions are greatly appreciated! Every contribution helps make WeatherFlow better for everyone. <br>
 If you have any questions, feel free to open an issue or contact the maintainers.<br>
